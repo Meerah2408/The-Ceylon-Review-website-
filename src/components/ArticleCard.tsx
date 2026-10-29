@@ -2,7 +2,8 @@ import React from 'react';
 import { Article, Writer } from '../types';
 import { Heart, Clock, MessageSquare, Eye } from 'lucide-react';
 
-const sameeraAvatar = '/sameera_avatar.jpg';
+const sameeraAvatar = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400&h=400';
+const fallbackArticleImage = 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&q=80&w=1200&h=630';
 
 interface ArticleCardProps {
   key?: React.Key;
@@ -55,11 +56,14 @@ export default function ArticleCard({
       >
         <div className="lg:w-3/5 relative h-64 sm:h-96 w-full shrink-0 border-b lg:border-b-0 lg:border-r border-[#580a0a]/15 overflow-hidden">
           <img 
-            src={article.imageUrl} 
+            src={article.imageUrl || fallbackArticleImage} 
             alt={article.title}
             className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-102"
             loading="lazy"
             referrerPolicy="no-referrer"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = fallbackArticleImage;
+            }}
           />
           <div className="absolute top-4 left-4 flex gap-2">
             <span className={`text-[10px] font-mono font-bold px-2.5 py-0.5 border rounded uppercase ${getCategoryColor(article.category)}`}>
@@ -87,12 +91,15 @@ export default function ArticleCard({
           <div className="mt-8 pt-6 border-t border-[#580a0a]/15 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             {/* Author */}
             <div className="flex items-center gap-3">
-              {(author || article.authorId === 'w1') && (
+              {(author || article.authorId === 'w1' || article.authorId === 'w-sameera') && (
                 <img 
                   src={author?.avatarUrl || sameeraAvatar} 
                   alt={author?.name || 'Sameera Mahboobdeen'}
                   className="w-10 h-10 rounded-full object-cover border-2 border-[#580a0a]/20"
                   referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = sameeraAvatar;
+                  }}
                 />
               )}
               <div>
@@ -184,11 +191,14 @@ export default function ArticleCard({
     >
       <div className="relative h-48 w-full border-b border-[#580a0a]/15 overflow-hidden shrink-0">
         <img 
-          src={article.imageUrl} 
+          src={article.imageUrl || fallbackArticleImage} 
           alt={article.title}
           className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-103"
           loading="lazy"
           referrerPolicy="no-referrer"
+          onError={(e) => {
+            (e.target as HTMLImageElement).src = fallbackArticleImage;
+          }}
         />
         <div className="absolute top-3 left-3">
           <span className={`text-[9px] font-mono font-bold px-2 py-0.5 border rounded uppercase ${getCategoryColor(article.category)}`}>
@@ -228,12 +238,15 @@ export default function ArticleCard({
 
         <div className="pt-3 border-t border-[#580a0a]/15 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            {(author || article.authorId === 'w1') && (
+            {(author || article.authorId === 'w1' || article.authorId === 'w-sameera') && (
               <img 
                 src={author?.avatarUrl || sameeraAvatar} 
                 alt={author?.name || 'Sameera Mahboobdeen'}
                 className="w-5 h-5 rounded-full object-cover border border-[#580a0a]/15"
                 referrerPolicy="no-referrer"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = sameeraAvatar;
+                }}
               />
             )}
             <span className="font-serif text-[11px] font-bold text-[#141110]">

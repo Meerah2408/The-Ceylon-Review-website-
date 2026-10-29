@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Article, Writer } from '../types';
 import { X, Heart, Clock, HeartOff, BookOpen } from 'lucide-react';
 
@@ -19,6 +19,24 @@ export default function BookmarksDrawer({
   onReadArticle,
   onRemoveBookmark
 }: BookmarksDrawerProps) {
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const getAuthorName = (authorId: string) => {

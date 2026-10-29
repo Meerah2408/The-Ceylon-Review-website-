@@ -519,7 +519,7 @@ export default function WriterProfileView({
                   </span>
                   <div className="flex gap-2.5 overflow-x-auto pb-1 max-w-full">
                     {[
-                      { name: 'Sameera', url: '/sameera_avatar.jpg' },
+                      { name: 'Sameera', url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150&h=150' },
                       { name: 'Archival M', url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=150&h=150' },
                       { name: 'Expert F', url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150&h=150' },
                       { name: 'Reporter M', url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=150&h=150' },
@@ -814,7 +814,7 @@ export default function WriterProfileView({
                     </span>
                     <div className="flex gap-2.5 overflow-x-auto pb-1 max-w-full">
                       {[
-                        { name: 'Sameera', url: '/sameera_avatar.jpg' },
+                        { name: 'Sameera', url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150&h=150' },
                         { name: 'Archival M', url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=150&h=150' },
                         { name: 'Expert F', url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150&h=150' },
                         { name: 'Reporter M', url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=150&h=150' },
@@ -861,6 +861,9 @@ export default function WriterProfileView({
                       alt={selectedWriter.name} 
                       className="w-24 h-24 rounded-full object-cover border-2 border-[#580a0a]/25 shadow-sm shrink-0 bg-white"
                       referrerPolicy="no-referrer"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400&h=400';
+                      }}
                     />
                     <div className="text-center sm:text-left space-y-1.5 flex-grow">
                       <h3 className="font-serif text-2xl md:text-3xl font-black text-[#141110] leading-tight select-all">{selectedWriter.name}</h3>

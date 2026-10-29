@@ -5,12 +5,34 @@ export const INITIAL_WRITERS: Writer[] = [
     id: 'w-sameera',
     name: 'Sameera Mahboobdeen',
     role: 'Editor in Chief',
-    bio: 'Editor in Chief',
-    avatarUrl: '/sameera_avatar.jpg',
+    bio: 'Founder and Chief Editor of The Ceylon Review. Reports extensively on postcolonial jurisprudence, executive emergency powers, and constitutional safeguards across South Asia and the Indian Ocean.',
+    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400&h=400',
     email: 'sameera.m@ceylonreview.com',
     twitter: '@sameera_mahb',
     location: 'Colombo, Sri Lanka',
     joinedDate: 'June 2026'
+  },
+  {
+    id: 'w-arjun',
+    name: 'Dr. Arjun Sivakumaran',
+    role: 'Senior Legal & Constitutional Analyst',
+    bio: 'Former senior appellate counsel and researcher focusing on constitutional jurisprudence, emergency regulations, and judicial oversight in South Asia.',
+    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=400&h=400',
+    email: 'arjun.s@ceylonreview.com',
+    twitter: '@arjun_siva_law',
+    location: 'Jaffna / Colombo',
+    joinedDate: 'January 2025'
+  },
+  {
+    id: 'w-dilini',
+    name: 'Dilini Senanayake',
+    role: 'Investigative Economics Correspondent',
+    bio: 'Covers public finance transparency, sovereign debt restructurings, state-owned enterprise accountability, and environmental governance.',
+    avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=400&h=400',
+    email: 'dilini.s@ceylonreview.com',
+    twitter: '@dilini_econ',
+    location: 'Kandy, Sri Lanka',
+    joinedDate: 'March 2025'
   }
 ];
 
@@ -127,5 +149,89 @@ export const INITIAL_ARTICLES: Article[] = [
     likes: 0,
     comments: [],
     views: 0
+  },
+  {
+    id: 'art-sovereign-debt-default',
+    title: 'The Sovereign Default: Jurisprudential Roots of the 2022 Economic Collapse',
+    subtitle: 'Tracing how executive overreach, opaque external borrowing contracts, and parliamentary abdication preconditioned Sri Lanka’s first sovereign default in history.',
+    summary: 'An archival examination of the constitutional and statutory mechanisms that permitted unmonitored sovereign bond issuances, currency swap commitments, and the subsequent fiscal restructuring demands.',
+    content: [
+      "I. The Architecture of Financial Implosion",
+      "When Sri Lanka announced a pre-emptive default on its external debt obligations in April 2022, political narratives framed the insolvency as an abrupt pandemic shock. Forensic legal analysis reveals a far longer and more structural trajectory: the systematic bypassing of parliamentary oversight over international commercial borrowing over two consecutive decades.",
+      "Under Article 148 of the 1978 Constitution, Parliament exercises full and exclusive control over public finances. Yet through the Active Liability Management Act No. 8 of 2018 and emergency provisions under the Monetary Law Act, executive agencies operated with wide discretion to enter into non-concessional commercial loans without tabling terms in Hansard.",
+      "“Parliament did not merely fail to inspect the debt contracts; it legislatively surrendered the tools required to scrutinise them.”",
+      "II. Opaque Bilateral Swaps and the Foreign Exchange Depletion",
+      "Between 2019 and 2021, the Central Bank pursued bilateral currency swap agreements that deferred immediate balance of payments reckoning while locking foreign exchange reserves into conditional non-convertible pools. When credit rating agencies downgraded the sovereign to default tiers, commercial access closed abruptly, exposing the fundamental vulnerability of import-dependent basic commodities.",
+      "III. Constitutional Accountability and the Supreme Court Precedent",
+      "In November 2023, the Supreme Court of Sri Lanka delivered a landmark verdict in Fundamental Rights petitions SC/FR 212/2022, ruling that senior executive figures, including former governors and ministers, had violated the public trust by mismanaging fiscal reserves and delaying debt restructuring. This marked the first occasion in South Asian jurisprudence where executive economic mismanagement was held to be a fundamental rights violation.",
+      "IV. The Lessons for Public Oversight",
+      "The ongoing restructuring agreements with the Official Creditor Committee and private bondholders highlight the necessity of statutory debt ceilings, mandatory public register of state guarantees, and judicial standing for public citizens to audit sovereign liabilities before signature."
+    ],
+    authorId: 'w-dilini',
+    publishedAt: 'October 14, 2024',
+    category: 'Business',
+    imageUrl: 'https://images.unsplash.com/photo-1559526324-4b87b5e36e44?auto=format&fit=crop&q=80&w=1200&h=630',
+    readTime: '9 min read',
+    isCurrent: false,
+    likes: 18,
+    comments: [
+      {
+        id: 'c-arch-1',
+        author: 'K. Ratnayake, Attorney-at-Law',
+        text: 'A vital analysis. The Supreme Court finding on public trust in economic policy should be made mandatory reading across law faculties.',
+        timestamp: '2024-10-16T11:24:00Z'
+      }
+    ],
+    views: 342
+  },
+  {
+    id: 'art-galle-face-precedents',
+    title: 'The Galle Face Precedents: Public Assembly Ordinances Under Judicial Scrutiny',
+    subtitle: 'The 2022 Aragalaya protests tested the outer boundaries of Section 14(1)(b) of the Constitution against colonial Police Ordinance provisions.',
+    summary: 'A critical review of high court and magistrate court rulings distinguishing lawful peaceful picketing from executive declarations of high-security containment zones.',
+    content: [
+      "I. The Friction Between Ordinance and Fundamental Right",
+      "The right to peaceful assembly without arms is explicitly protected under Section 14(1)(b) of the 1978 Constitution. Yet day-to-day policing across Sri Lanka continues to rely upon Section 77 of the Police Ordinance of 1865 — a colonial statutory instrument that predates the constitutional rights charter by over a century.",
+      "During the mass public mobilizations of mid-2022, the Fort Police sought extensive magisterial injunctions to proscribe protestors from entering public thoroughfares adjacent to Galle Face Green and the Presidential Secretariat. In a series of notable magistrate orders, the judiciary refused blanket prohibitions, noting that public discomfort or executive inconvenience does not equate to a breach of the peace.",
+      "“Fundamental rights are not granted as executive indulgences to be withdrawn whenever political power feels besieged; they are sovereign guarantees rooted in civilian citizenship.”",
+      "II. High-Security Zones and Executive Overreach",
+      "When the President invoked the Official Secrets Act in September 2022 to declare major civilian precincts of Colombo as High-Security Zones, the Human Rights Commission of Sri Lanka and independent bar associations challenged the order as ultra vires. The executive subsequently revoked the notification prior to full judicial review.",
+      "III. The Continuing Need for Assembly Protection Statutes",
+      "Judicial rulings during the 2022 protests demonstrated the institutional resilience of magistrate courts. However, reliance on judicial discretion case-by-case is an inadequate substitute for comprehensive legislative reform reconciling colonial police statutes with contemporary human rights standards."
+    ],
+    authorId: 'w-arjun',
+    publishedAt: 'February 20, 2025',
+    category: 'Politics',
+    imageUrl: 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&q=80&w=1200&h=630',
+    readTime: '8 min read',
+    isCurrent: false,
+    likes: 24,
+    comments: [],
+    views: 289
+  },
+  {
+    id: 'art-surveillance-shadows',
+    title: 'Surveillance in the Shadows: Telecommunications Interception in Post-2019 Sri Lanka',
+    subtitle: 'An inquiry into the legal grey zones governing metadata retention, warrantless packet inspection, and spyware deployment in national security investigations.',
+    summary: 'Examining statutory loopholes in the Telecommunications Act and the Personal Data Protection Act that leave journalists and civic activists vulnerable to electronic monitoring.',
+    content: [
+      "I. The Statutory Void in Wiretap Authorisation",
+      "Unlike jurisdictions with explicit judicial warrant requirements for communication interception, Sri Lanka’s statutory framework lacks a dedicated statutory regime governing state surveillance. Instead, intelligence and law enforcement agencies have historically operated under omnibus provisions of the Telecommunications Regulatory Commission Act and emergency detention protocols.",
+      "II. The Pegasus and Graphite Inquiries",
+      "International forensic investigations by the Citizen Lab and Amnesty Tech documented the proliferation of zero-click mercenary spyware across South Asia. In Sri Lanka, human rights litigators and investigative journalists covering state-sponsored corruption have reported unexplained device anomalies consistent with commercial remote surveillance payloads.",
+      "“Privacy is not a luxury afforded during peacetime; it is the safeguard that enables democratic dissent to survive in times of tension.”",
+      "III. Protecting the Digital Commons",
+      "As Sri Lanka implements the Personal Data Protection Act No. 9 of 2022, the broad national security exemptions contained in Section 35 must be subjected to independent statutory oversight and judicial warrant requirements, ensuring source protection remains inviolable."
+    ],
+    authorId: 'w-sameera',
+    publishedAt: 'May 11, 2025',
+    category: 'Tech',
+    imageUrl: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&q=80&w=1200&h=630',
+    readTime: '10 min read',
+    isCurrent: false,
+    likes: 31,
+    comments: [],
+    views: 412
   }
 ];
+

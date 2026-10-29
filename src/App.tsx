@@ -12,8 +12,22 @@ import SovereignEditorialDesk from './components/SovereignEditorialDesk';
 import { INITIAL_ARTICLES, INITIAL_WRITERS } from './initialData';
 import { Article, Writer, Category } from './types';
 import { Shield, Mail, Globe, Play, Film, ExternalLink, HelpCircle, Users, Newspaper, Settings } from 'lucide-react';
+import { 
+  auth, 
+  signInEditorWithGoogle, 
+  signOutEditor, 
+  subscribeToArticles, 
+  subscribeToWriters,
+  saveArticleToFirestore,
+  updateArticleInFirestore,
+  deleteArticleFromFirestore,
+  saveWriterToFirestore,
+  seedInitialFirestoreArchives
+} from './firebase';
+import { onAuthStateChanged, User } from 'firebase/auth';
 
 export default function App() {
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   // --- Persistent Storage State Hydration ---
   const [articles, setArticles] = useState<Article[]>(() => {
     const saved = localStorage.getItem('the_ceylon_review_articles_v6');
@@ -31,6 +45,13 @@ export default function App() {
 
     if (loadedArticles.length === 0) {
       loadedArticles = [...INITIAL_ARTICLES];
+    } else {
+      // Merge in any initial articles (such as new archival releases) that are not yet in loadedArticles
+      INITIAL_ARTICLES.forEach(initArt => {
+        if (!loadedArticles.some(a => a.id === initArt.id)) {
+          loadedArticles.push(initArt);
+        }
+      });
     }
 
     // Force 'art-manufactured-silence' to be exactly at index 1 (the second article)
@@ -53,17 +74,41 @@ export default function App() {
 
   const [writers, setWriters] = useState<Writer[]>(() => {
     const saved = localStorage.getItem('the_ceylon_review_writers_v6');
+    let loadedWriters: Writer[] = [];
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
         if (parsed && parsed.length > 0) {
-          return parsed;
+          loadedWriters = parsed;
         }
       } catch (e) {
         console.error('Failed to parse writers from storage, reverting to default.', e);
       }
     }
-    return INITIAL_WRITERS;
+    if (loadedWriters.length === 0) {
+      return INITIAL_WRITERS;
+    }
+
+    // Merge in any initial writers not yet in storage and sanitize old broken local avatar URLs
+    const merged = loadedWriters.map(w => {
+      const initMatch = INITIAL_WRITERS.find(iw => iw.id === w.id);
+      if (w.avatarUrl === '/sameera_avatar.jpg' || !w.avatarUrl) {
+        return { 
+          ...w, 
+          avatarUrl: initMatch?.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400&h=400',
+          bio: w.bio === 'Editor in Chief' ? (initMatch?.bio || w.bio) : w.bio
+        };
+      }
+      return w;
+    });
+
+    INITIAL_WRITERS.forEach(iw => {
+      if (!merged.some(w => w.id === iw.id)) {
+        merged.push(iw);
+      }
+    });
+
+    return merged;
   });
 
   const [bookmarks, setBookmarks] = useState<string[]>(() => {
@@ -101,6 +146,55 @@ export default function App() {
     localStorage.setItem('the_ceylon_review_bookmarks_v6', JSON.stringify(bookmarks));
   }, [bookmarks]);
 
+  // Auth State Listener
+  useEffect(() => {
+    const unsubAuth = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+      if (user) {
+        if (user.email === 'zaina2408@gmail.com') {
+          setIsAdminMode(true);
+        }
+        seedInitialFirestoreArchives();
+      }
+    });
+    return () => unsubAuth();
+  }, []);
+
+  // Real-Time Firestore Sync
+  useEffect(() => {
+    let unsubArticles: (() => void) | undefined;
+    let unsubWriters: (() => void) | undefined;
+
+    try {
+      unsubArticles = subscribeToArticles((cloudArticles) => {
+        if (cloudArticles && cloudArticles.length > 0) {
+          setArticles(cloudArticles);
+        }
+      }, (err) => {
+        console.warn('Realtime articles listener fallback:', err);
+      });
+    } catch (e) {
+      console.warn('Realtime listener init deferred:', e);
+    }
+
+    try {
+      unsubWriters = subscribeToWriters((cloudWriters) => {
+        if (cloudWriters && cloudWriters.length > 0) {
+          setWriters(cloudWriters);
+        }
+      }, (err) => {
+        console.warn('Realtime writers listener fallback:', err);
+      });
+    } catch (e) {
+      console.warn('Realtime writer init deferred:', e);
+    }
+
+    return () => {
+      unsubArticles?.();
+      unsubWriters?.();
+    };
+  }, []);
+
   // Handle URL article parameters for deep linking
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -135,11 +229,14 @@ export default function App() {
 
   const handleRecommendArticle = (articleId: string) => {
     setArticles(prev => 
-      prev.map(art => 
-        art.id === articleId 
-          ? { ...art, likes: art.likes + 1 }
-          : art
-      )
+      prev.map(art => {
+        if (art.id === articleId) {
+          const updatedLikes = art.likes + 1;
+          updateArticleInFirestore(articleId, { likes: updatedLikes }).catch(() => {});
+          return { ...art, likes: updatedLikes };
+        }
+        return art;
+      })
     );
     if (selectedArticle && selectedArticle.id === articleId) {
       setSelectedArticle(prev => prev ? { ...prev, likes: prev.likes + 1 } : null);
@@ -155,11 +252,14 @@ export default function App() {
     };
 
     setArticles(prev => 
-      prev.map(art => 
-        art.id === articleId 
-          ? { ...art, comments: [newComment, ...art.comments] }
-          : art
-      )
+      prev.map(art => {
+        if (art.id === articleId) {
+          const updatedComments = [newComment, ...art.comments];
+          updateArticleInFirestore(articleId, { comments: updatedComments }).catch(() => {});
+          return { ...art, comments: updatedComments };
+        }
+        return art;
+      })
     );
 
     if (selectedArticle && selectedArticle.id === articleId) {
@@ -173,11 +273,14 @@ export default function App() {
 
   const handleDeleteComment = (articleId: string, commentId: string) => {
     setArticles(prev => 
-      prev.map(art => 
-        art.id === articleId 
-          ? { ...art, comments: art.comments.filter(c => c.id !== commentId) }
-          : art
-      )
+      prev.map(art => {
+        if (art.id === articleId) {
+          const updatedComments = art.comments.filter(c => c.id !== commentId);
+          updateArticleInFirestore(articleId, { comments: updatedComments }).catch(() => {});
+          return { ...art, comments: updatedComments };
+        }
+        return art;
+      })
     );
 
     if (selectedArticle && selectedArticle.id === articleId) {
@@ -191,11 +294,14 @@ export default function App() {
 
   const handleReadMore = (article: Article) => {
     setArticles(prev => 
-      prev.map(art => 
-        art.id === article.id 
-          ? { ...art, views: art.views + 1 }
-          : art
-      )
+      prev.map(art => {
+        if (art.id === article.id) {
+          const updatedViews = art.views + 1;
+          updateArticleInFirestore(article.id, { views: updatedViews }).catch(() => {});
+          return { ...art, views: updatedViews };
+        }
+        return art;
+      })
     );
     
     setSelectedArticle({ ...article, views: article.views + 1 });
@@ -210,10 +316,16 @@ export default function App() {
       comments: []
     };
     setArticles(prev => [newArticle, ...prev]);
+    saveArticleToFirestore(newArticle).catch(err => {
+      console.warn('Saved dispatch locally, Firestore sync deferred:', err);
+    });
   };
 
   const handleAddNewWriter = (newWriter: Writer) => {
     setWriters(prev => [...prev, newWriter]);
+    saveWriterToFirestore(newWriter).catch(err => {
+      console.warn('Saved journalist locally, Firestore sync deferred:', err);
+    });
   };
 
   const handleUpdateWriter = (writerId: string, updatedFields: Partial<Writer>) => {
@@ -238,6 +350,10 @@ export default function App() {
     if (selectedArticle && selectedArticle.id === articleId) {
       setSelectedArticle(prev => prev ? { ...prev, ...updatedFields } : null);
     }
+
+    updateArticleInFirestore(articleId, updatedFields).catch(err => {
+      console.warn('Saved edit locally, Firestore sync deferred:', err);
+    });
   };
 
   const handleDeleteArticle = (articleId: string) => {
@@ -245,6 +361,9 @@ export default function App() {
     if (selectedArticle?.id === articleId) {
       setSelectedArticle(null);
     }
+    deleteArticleFromFirestore(articleId).catch(err => {
+      console.warn('Deleted dispatch locally, Firestore sync deferred:', err);
+    });
   };
 
   const handleResetData = () => {
@@ -275,11 +394,18 @@ export default function App() {
     return matchesTab && matchesCategory && matchesKeyword;
   });
 
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    setSearchTerm(''); 
+    setSelectedCategory('All');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const bookmarkedArticlesList = articles.filter(art => bookmarks.includes(art.id));
 
   const editorInChief = writers.find(w => w.id === 'w-sameera' || w.role.toLowerCase().includes('editor')) || writers[0];
   const editorName = editorInChief ? editorInChief.name : 'Sameera Mahboobdeen';
-  const editorAvatar = editorInChief ? editorInChief.avatarUrl : '/sameera_avatar.jpg';
+  const editorAvatar = editorInChief ? editorInChief.avatarUrl : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400&h=400';
 
   const breakingNewsString = "LEGAL ALERT: \"A CENTURY OF EMERGENCY\" HISTORICAL BROADCAST DISPATCHED BY EXCLUSIVE ANALYSIS FOR JULY 2026";
 
@@ -289,24 +415,19 @@ export default function App() {
         {/* Broadside Header */}
         <Header 
           activeTab={activeTab} 
-          setActiveTab={(tab) => {
-            setActiveTab(tab);
-            setSearchTerm(''); 
-            setSelectedCategory('All');
-          }} 
+          setActiveTab={handleTabChange} 
           bookmarksCount={bookmarks.length} 
           onOpenBookmarks={() => setIsBookmarksOpen(true)}
           breakingNews={breakingNewsString}
           isAdmin={isAdminMode}
           setIsAdmin={setIsAdminMode}
+          currentUser={currentUser}
+          onSignInGoogle={signInEditorWithGoogle}
+          onSignOutGoogle={signOutEditor}
         />
 
         {/* Tab Selection */}
-        <Tabs activeTab={activeTab} setActiveTab={(tab) => {
-          setActiveTab(tab);
-          setSearchTerm('');
-          setSelectedCategory('All');
-        }} />
+        <Tabs activeTab={activeTab} setActiveTab={handleTabChange} />
 
         {/* Filter bar (not shown on editorial desk, privacy, or directive tab) */}
         {(activeTab === 'current' || activeTab === 'past') && (
@@ -1280,7 +1401,7 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-6 text-center space-y-4">
           <h2 className="font-serif text-3xl font-black tracking-widest text-[#f5eedc] uppercase">THE CEYLON REVIEW</h2>
           <p className="text-[11px] font-mono text-[#f5eedc]/50 tracking-[0.25em] max-w-2xl mx-auto leading-normal uppercase">
-            INDDEPENDENT JOURNALISM • ANALYTICAL JURISPRUDENCE • COMMITTED TO ABSOLUTE TRUTH & SOVEREIGN PEOPLES
+            INDEPENDENT JOURNALISM • ANALYTICAL JURISPRUDENCE • COMMITTED TO ABSOLUTE TRUTH & SOVEREIGN PEOPLES
           </p>
           
           <div className="bg-white/5 border border-white/10 p-3 max-w-lg mx-auto rounded text-xs font-mono text-center flex flex-col sm:flex-row items-center justify-center gap-2">
@@ -1291,9 +1412,9 @@ export default function App() {
           <div className="pt-6 border-t border-white/5 flex flex-col sm:flex-row justify-between items-center gap-3 text-[10px] font-mono text-white/30">
             <span>© 2026 THE CEYLON REVIEW PRINT & INTERACTIVE REPRODUCTIONS INC. ALL RIGHTS PRESERVED.</span>
             <span className="flex gap-4">
-              <span onClick={() => setActiveTab('directive')} className="hover:text-white cursor-pointer hover:underline">REGULATORY DIRECTIVE</span>
-              <span onClick={() => setActiveTab('privacy')} className="hover:text-white cursor-pointer hover:underline">PRIVACY DEFENSE</span>
-              <span onClick={() => setActiveTab('disclaimer')} className="hover:text-white cursor-pointer hover:underline">LIABILITY DISCLAIMER</span>
+              <span onClick={() => handleTabChange('directive')} className="hover:text-white cursor-pointer hover:underline">REGULATORY DIRECTIVE</span>
+              <span onClick={() => handleTabChange('privacy')} className="hover:text-white cursor-pointer hover:underline">PRIVACY DEFENSE</span>
+              <span onClick={() => handleTabChange('disclaimer')} className="hover:text-white cursor-pointer hover:underline">LIABILITY DISCLAIMER</span>
             </span>
           </div>
         </div>
@@ -1343,6 +1464,9 @@ export default function App() {
         onEditArticle={handleEditArticle}
         onDeleteArticle={handleDeleteArticle}
         onResetData={handleResetData}
+        currentUser={currentUser}
+        onSignInGoogle={signInEditorWithGoogle}
+        onSignOutGoogle={signOutEditor}
       />
 
       {/* Floating CMS Control Desk Trigger Button */}

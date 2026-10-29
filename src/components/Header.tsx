@@ -1,5 +1,6 @@
 import React from 'react';
-import { Clock, Heart, Lock, Unlock, Mail } from 'lucide-react';
+import { Clock, Heart, Lock, Unlock, Mail, Cloud, LogIn, LogOut, CheckCircle2 } from 'lucide-react';
+import { User } from 'firebase/auth';
 
 interface HeaderProps {
   activeTab: string;
@@ -9,6 +10,9 @@ interface HeaderProps {
   breakingNews: string;
   isAdmin: boolean;
   setIsAdmin: (admin: boolean) => void;
+  currentUser?: User | null;
+  onSignInGoogle?: () => void;
+  onSignOutGoogle?: () => void;
 }
 
 export default function Header({ 
@@ -18,7 +22,10 @@ export default function Header({
   onOpenBookmarks,
   breakingNews,
   isAdmin,
-  setIsAdmin
+  setIsAdmin,
+  currentUser,
+  onSignInGoogle,
+  onSignOutGoogle
 }: HeaderProps) {
   const currentDateString = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
@@ -66,13 +73,42 @@ export default function Header({
             "Everything is connected. Nothing is neutral."
           </div>
 
-          <div className="flex flex-wrap items-center justify-center gap-4">
+          <div className="flex flex-wrap items-center justify-center gap-3">
             
             {/* Contact Email Highlighted */}
-            <div className="flex items-center gap-1 bg-[#141110] text-[#f5eedc] px-2.5 py-1 rounded" title="Submit Article drafts">
+            <div className="hidden lg:flex items-center gap-1 bg-[#141110] text-[#f5eedc] px-2.5 py-1 rounded" title="Submit Article drafts">
               <Mail size={10} className="text-[#ebdcb9]" />
               <span>Submit: <a href="mailto:theceylonreview@proton.me" className="underline font-bold hover:text-white">theceylonreview@proton.me</a></span>
             </div>
+
+            {/* Cloud Firestore Sync Status & Editor Auth */}
+            {currentUser ? (
+              <div className="flex items-center gap-1.5 bg-emerald-950/10 border border-emerald-800/30 px-2.5 py-1 rounded text-emerald-900 font-mono text-[9px] font-bold">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
+                <span className="hidden sm:inline">Cloud Live:</span>
+                <span className="truncate max-w-[130px]">{currentUser.email || 'Editor'}</span>
+                {onSignOutGoogle && (
+                  <button 
+                    onClick={onSignOutGoogle}
+                    className="ml-1 text-red-800 hover:text-red-950 underline cursor-pointer"
+                    title="Sign Out"
+                  >
+                    Logout
+                  </button>
+                )}
+              </div>
+            ) : (
+              onSignInGoogle && (
+                <button
+                  onClick={onSignInGoogle}
+                  className="flex items-center gap-1 px-2.5 py-1 border border-amber-800/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-950 font-mono text-[9px] font-bold uppercase rounded cursor-pointer transition-all"
+                  title="Sign in with Google to enable instant live cloud publishing"
+                >
+                  <Cloud size={10} className="text-amber-700" />
+                  <span>Editor Sign-In</span>
+                </button>
+              )
+            )}
 
             <span className="hidden sm:inline text-black/10">|</span>
 

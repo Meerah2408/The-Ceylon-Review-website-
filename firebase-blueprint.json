@@ -1,0 +1,139 @@
+{
+  "entities": {
+    "Article": {
+      "title": "Article",
+      "description": "Investigative journalism article or archival dispatch in The Ceylon Review.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the article"
+        },
+        "title": {
+          "type": "string",
+          "description": "Headline of the investigative report"
+        },
+        "subtitle": {
+          "type": "string",
+          "description": "Deck or secondary headline"
+        },
+        "summary": {
+          "type": "string",
+          "description": "Executive summary or abstract"
+        },
+        "content": {
+          "type": "array",
+          "description": "Article body paragraphs",
+          "items": {
+            "type": "string"
+          }
+        },
+        "authorId": {
+          "type": "string",
+          "description": "Reference ID to the contributing journalist"
+        },
+        "publishedAt": {
+          "type": "string",
+          "description": "Publication date string"
+        },
+        "category": {
+          "type": "string",
+          "description": "Topic desk (Politics, Tech, Science, Opinion, Culture, Business)"
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "Header image URL"
+        },
+        "readTime": {
+          "type": "string",
+          "description": "Estimated reading duration"
+        },
+        "isCurrent": {
+          "type": "boolean",
+          "description": "True for active front-page dispatches, false for archive"
+        },
+        "isFeatured": {
+          "type": "boolean",
+          "description": "True if featured on the cover broadside"
+        },
+        "likes": {
+          "type": "number",
+          "description": "Community appreciation counter"
+        },
+        "views": {
+          "type": "number",
+          "description": "Total reader views"
+        },
+        "comments": {
+          "type": "array",
+          "description": "Public discussion and peer review comments",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "author": { "type": "string" },
+              "text": { "type": "string" },
+              "timestamp": { "type": "string" }
+            },
+            "required": ["id", "author", "text"]
+          }
+        }
+      },
+      "required": ["id", "title", "content", "authorId", "publishedAt", "category"]
+    },
+    "Writer": {
+      "title": "Writer",
+      "description": "Correspondent or contributing journalist for The Ceylon Review.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique writer identifier"
+        },
+        "name": {
+          "type": "string",
+          "description": "Full name of the journalist"
+        },
+        "role": {
+          "type": "string",
+          "description": "Editorial role or beat"
+        },
+        "bio": {
+          "type": "string",
+          "description": "Biographical summary"
+        },
+        "avatarUrl": {
+          "type": "string",
+          "description": "Portrait photograph URL"
+        },
+        "email": {
+          "type": "string",
+          "description": "Contact email"
+        },
+        "twitter": {
+          "type": "string",
+          "description": "Social handle"
+        },
+        "location": {
+          "type": "string",
+          "description": "Reporting bureau / base"
+        },
+        "joinedDate": {
+          "type": "string",
+          "description": "Date joined the editorial board"
+        }
+      },
+      "required": ["id", "name", "role"]
+    }
+  },
+  "firestore": {
+    "/articles/{articleId}": {
+      "entity": "Article",
+      "description": "Collection of all current and archival articles published by The Ceylon Review."
+    },
+    "/writers/{writerId}": {
+      "entity": "Writer",
+      "description": "Registered journalists and correspondents."
+    }
+  }
+}

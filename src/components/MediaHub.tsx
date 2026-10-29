@@ -48,7 +48,7 @@ const DEFAULT_VIDEOS: VideoItem[] = [
     id: 'vid-rowlatt',
     title: 'The Rowlatt Act & Postcolonial Continuities in South Asia',
     description: 'An educational briefing tracking the direct historical evolution of the Defence of India Act 1915 into the current Prevention of Terrorism legislation of Sri Lanka.',
-    videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', // Placeholder YouTube URL
+    videoUrl: 'https://www.youtube.com/watch?v=kYIP3y5dO-M',
     platform: 'YouTube',
     publishedAt: 'June 28, 2026',
     likes: 42
@@ -57,7 +57,7 @@ const DEFAULT_VIDEOS: VideoItem[] = [
     id: 'vid-press-freedom',
     title: 'Defending Confidential Sources in Digital Spaces',
     description: 'Chief Editor Sameera Mahboobdeen addresses the Colombo Press Union on digital metadata footprints, Signal encryption, and legislative loopholes.',
-    videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+    videoUrl: 'https://www.youtube.com/watch?v=s5R-t6tZfG4',
     platform: 'YouTube',
     publishedAt: 'June 19, 2026',
     likes: 29
@@ -66,7 +66,7 @@ const DEFAULT_VIDEOS: VideoItem[] = [
     id: 'vid-constitutional',
     title: 'Section 14(1)(a) & Administrative Censorship',
     description: 'A panel discussion on constitutional safeguards, the role of public interest litigation, and resistance against unconstitutional licensing acts.',
-    videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+    videoUrl: 'https://www.youtube.com/watch?v=tgbNymZ7vqY',
     platform: 'YouTube',
     publishedAt: 'May 30, 2026',
     likes: 56
@@ -107,16 +107,57 @@ export default function MediaHub({ isAdmin }: MediaHubProps) {
   // Persistent state for Videos & Gallery Events
   const [videos, setVideos] = useState<VideoItem[]>(() => {
     const saved = localStorage.getItem('ceylon_review_videos_v2');
-    return saved ? JSON.parse(saved) : DEFAULT_VIDEOS;
+    if (saved) {
+      try {
+        const parsed: VideoItem[] = JSON.parse(saved);
+        // Sanitize any legacy placeholder video links
+        return parsed.map(v => {
+          if (v.videoUrl.includes('dQw4w9WgXcQ')) {
+            const defMatch = DEFAULT_VIDEOS.find(dv => dv.id === v.id);
+            return defMatch || v;
+          }
+          return v;
+        });
+      } catch (e) {
+        console.error('Failed to parse videos, using defaults.', e);
+      }
+    }
+    return DEFAULT_VIDEOS;
   });
 
   const [events, setEvents] = useState<EventItem[]>(() => {
     const saved = localStorage.getItem('ceylon_review_events_v2');
-    return saved ? JSON.parse(saved) : DEFAULT_EVENTS;
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error('Failed to parse events, using defaults.', e);
+      }
+    }
+    return DEFAULT_EVENTS;
   });
 
   // Lightbox Modal for Gallery Events
   const [activeLightboxImage, setActiveLightboxImage] = useState<EventItem | null>(null);
+
+  // Keyboard Escape & Scroll Lock for Lightbox
+  useEffect(() => {
+    if (!activeLightboxImage) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setActiveLightboxImage(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [activeLightboxImage]);
 
   // Forms Toggle State
   const [showVideoForm, setShowVideoForm] = useState(false);
@@ -670,6 +711,9 @@ export default function MediaHub({ isAdmin }: MediaHubProps) {
                       alt={item.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       referrerPolicy="no-referrer"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&q=80&w=800';
+                      }}
                     />
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                       <span className="flex items-center gap-1 bg-[#141110] text-[#f5eedc] text-[10px] font-mono uppercase tracking-widest px-3 py-1.5 rounded-sm border border-[#580a0a]/40 shadow font-bold">
@@ -751,6 +795,9 @@ export default function MediaHub({ isAdmin }: MediaHubProps) {
                 alt={activeLightboxImage.title}
                 className="w-full h-full object-contain max-h-[80vh]"
                 referrerPolicy="no-referrer"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&q=80&w=800';
+                }}
               />
             </div>
 

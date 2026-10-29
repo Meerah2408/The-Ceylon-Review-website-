@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Article, Writer, Comment, Category } from '../types';
 
-const sameeraAvatar = '/sameera_avatar.jpg';
+const sameeraAvatar = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400&h=400';
+const fallbackArticleImage = 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&q=80&w=1200&h=630';
 
 import { 
   X, Heart, Clock, Send, MessageSquare, ThumbsUp, Calendar, ArrowLeft, 
@@ -43,6 +44,23 @@ export default function ArticleDetailModal({
   const editorName = editorInChief ? editorInChief.name : "Sameera Mahboobdeen";
   const editorBio = editorInChief ? editorInChief.bio : "Sameera Mahboobdeen reports in-depth on postcolonial jurisprudence, executive authority, and state security frameworks. Sourcing analysis directly from archival gazettes and supreme court submissions, focus is placed on civil liberties across the Indian Ocean.";
   const editorAvatar = editorInChief ? editorInChief.avatarUrl : sameeraAvatar;
+
+  // Escape key listener & Body scroll lock
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [onClose]);
 
   // Commenting States
   const [name, setName] = useState('');
@@ -490,6 +508,9 @@ export default function ArticleDetailModal({
                       alt={author?.name || editorName}
                       className="w-14 h-14 md:w-24 md:h-24 rounded-full object-cover border-2 border-[#580a0a]/30 shrink-0"
                       referrerPolicy="no-referrer"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = editorAvatar;
+                      }}
                     />
                     <div className="flex-grow md:flex-none">
                       <p className="font-mono text-[9px] font-black tracking-widest uppercase text-[#580a0a]">SOVEREIGN REPORTER</p>
@@ -526,6 +547,9 @@ export default function ArticleDetailModal({
                       alt={article.title}
                       className="w-full object-cover h-full"
                       referrerPolicy="no-referrer"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = fallbackArticleImage;
+                      }}
                     />
                   </div>
                 )}
@@ -659,7 +683,12 @@ export default function ArticleDetailModal({
                           <div className="flex justify-between items-start">
                             <div>
                               <span className="font-serif font-bold text-xs text-[#141110] block">{comment.author}</span>
-                              <span className="font-mono text-[9px] text-[#5e5347] block font-bold">{new Date(comment.timestamp).toLocaleString()}</span>
+                              <span className="font-mono text-[9px] text-[#5e5347] block font-bold">
+                                {(() => {
+                                  const d = new Date(comment.timestamp);
+                                  return isNaN(d.getTime()) ? (comment.timestamp || 'Recently') : d.toLocaleString();
+                                })()}
+                              </span>
                             </div>
                             {isAdmin && onDeleteComment && (
                               <button 
