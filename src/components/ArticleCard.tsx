@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Article, Writer } from '../types';
-import { Heart, Clock, MessageSquare, Eye } from 'lucide-react';
+import { Heart, Clock, MessageSquare, Eye, Trash2 } from 'lucide-react';
 
 const sameeraAvatar = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400&h=400';
 const fallbackArticleImage = 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&q=80&w=1200&h=630';
@@ -13,6 +13,8 @@ interface ArticleCardProps {
   isBookmarked: boolean;
   onToggleBookmark: (e: React.MouseEvent, articleId: string) => void;
   variant?: 'featured' | 'grid' | 'sidebar';
+  isAdmin?: boolean;
+  onDelete?: (articleId: string) => void;
 }
 
 export default function ArticleCard({
@@ -21,8 +23,11 @@ export default function ArticleCard({
   onReadMore,
   isBookmarked,
   onToggleBookmark,
-  variant = 'grid'
+  variant = 'grid',
+  isAdmin = false,
+  onDelete
 }: ArticleCardProps) {
+  const [confirmDelete, setConfirmDelete] = useState(false);
   
   const getCategoryColor = (cat: string) => {
     switch (cat) {
@@ -73,6 +78,51 @@ export default function ArticleCard({
               Spotlight Story
             </span>
           </div>
+
+          {isAdmin && onDelete && (
+            <div className="absolute top-4 right-4 flex gap-2">
+              {confirmDelete ? (
+                <div className="flex items-center gap-1.5 bg-red-950/95 text-white p-1 px-2.5 rounded border border-red-500 shadow-xl" onClick={(e) => e.stopPropagation()}>
+                  <span className="font-mono text-[10px] uppercase font-bold text-red-200">Delete story?</span>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete(article.id);
+                    }}
+                    className="bg-red-600 hover:bg-red-700 text-white text-[10px] font-mono font-bold px-2.5 py-1 rounded cursor-pointer uppercase shadow"
+                    id={`confirm-delete-feat-${article.id}`}
+                  >
+                    Confirm Delete
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setConfirmDelete(false);
+                    }}
+                    className="text-[10px] font-mono text-gray-300 hover:text-white px-1.5 cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setConfirmDelete(true);
+                  }}
+                  className="bg-red-800 hover:bg-red-900 text-white border border-red-900 px-3 py-1.5 rounded shadow-lg cursor-pointer transition-all flex items-center gap-1.5 font-mono text-[11px] font-bold uppercase tracking-wider"
+                  title="Delete article"
+                  id={`delete-feat-${article.id}`}
+                >
+                  <Trash2 size={13} />
+                  <span>Delete</span>
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="p-6 md:p-8 flex flex-col justify-between flex-grow">
@@ -124,6 +174,46 @@ export default function ArticleCard({
               </div>
 
               <div className="flex items-center gap-2">
+                {isAdmin && onDelete && (
+                  confirmDelete ? (
+                    <div className="flex items-center gap-1 bg-red-100 border border-red-400 p-1 rounded" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDelete(article.id);
+                        }}
+                        className="bg-red-700 hover:bg-red-800 text-white font-mono text-[10px] font-bold px-2 py-0.5 rounded cursor-pointer uppercase shadow"
+                      >
+                        Confirm
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setConfirmDelete(false);
+                        }}
+                        className="text-[10px] font-mono text-gray-700 px-1"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setConfirmDelete(true);
+                      }}
+                      className="p-2 rounded-sm border border-red-800/30 bg-red-100 hover:bg-red-200 text-red-800 cursor-pointer transition-all flex items-center gap-1 font-mono text-[11px] font-bold"
+                      title="Delete article"
+                      id={`delete-feat-bottom-${article.id}`}
+                    >
+                      <Trash2 size={13} />
+                      <span className="hidden sm:inline">Delete</span>
+                    </button>
+                  )
+                )}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -159,9 +249,50 @@ export default function ArticleCard({
           <span className="text-[#580a0a] uppercase tracking-wider font-extrabold">
             {article.category}
           </span>
-          <span>
-            {formatDate(article.publishedAt)}
-          </span>
+          <div className="flex items-center gap-2">
+            <span>
+              {formatDate(article.publishedAt)}
+            </span>
+            {isAdmin && onDelete && (
+              confirmDelete ? (
+                <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete(article.id);
+                    }}
+                    className="p-1 px-1.5 bg-red-700 text-white text-[9px] font-mono font-bold uppercase rounded cursor-pointer"
+                  >
+                    Confirm Delete
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setConfirmDelete(false);
+                    }}
+                    className="text-gray-500 text-[10px] px-1"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setConfirmDelete(true);
+                  }}
+                  className="p-1 text-red-700 hover:text-red-900 hover:bg-red-100 rounded transition-colors cursor-pointer"
+                  title="Delete article"
+                  id={`delete-sidebar-${article.id}`}
+                >
+                  <Trash2 size={12} />
+                </button>
+              )
+            )}
+          </div>
         </div>
         <h3 className="font-serif text-sm md:text-base font-bold text-[#141110] mt-1.5 group-hover:text-[#580a0a] transition-colors duration-200 line-clamp-2 leading-snug">
           {article.title}
@@ -205,21 +336,64 @@ export default function ArticleCard({
             {article.category}
           </span>
         </div>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggleBookmark(e, article.id);
-          }}
-          className={`absolute top-3 right-3 p-1.5 rounded-sm border cursor-pointer transition-all ${
-            isBookmarked 
-              ? 'bg-[#580a0a] text-white border-[#580a0a]' 
-              : 'bg-[#141110]/80 hover:bg-[#141110] border-[#580a0a]/10 text-white'
-          }`}
-          title={isBookmarked ? "Saved" : "Save clipping"}
-          id={`bookmark-grid-${article.id}`}
-        >
-          <Heart size={12} className={isBookmarked ? "fill-current" : ""} />
-        </button>
+        <div className="absolute top-3 right-3 flex items-center gap-1.5">
+          {isAdmin && onDelete && (
+            confirmDelete ? (
+              <div className="flex items-center gap-1 bg-red-950/95 text-white p-1 rounded border border-red-500 shadow-xl" onClick={(e) => e.stopPropagation()}>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(article.id);
+                  }}
+                  className="bg-red-600 hover:bg-red-700 text-white text-[9px] font-mono font-bold px-2 py-0.5 rounded cursor-pointer uppercase shadow"
+                  id={`confirm-delete-grid-${article.id}`}
+                >
+                  Confirm Delete
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setConfirmDelete(false);
+                  }}
+                  className="text-[10px] text-gray-300 hover:text-white px-1 cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setConfirmDelete(true);
+                }}
+                className="p-1.5 rounded-sm border border-red-800/40 bg-red-800 hover:bg-red-900 text-white cursor-pointer transition-all shadow flex items-center gap-1 font-mono text-[9px] font-bold uppercase"
+                title="Delete dispatch"
+                id={`delete-grid-${article.id}`}
+              >
+                <Trash2 size={12} />
+                <span>Delete</span>
+              </button>
+            )
+          )}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleBookmark(e, article.id);
+            }}
+            className={`p-1.5 rounded-sm border cursor-pointer transition-all ${
+              isBookmarked 
+                ? 'bg-[#580a0a] text-white border-[#580a0a]' 
+                : 'bg-[#141110]/80 hover:bg-[#141110] border-[#580a0a]/10 text-white'
+            }`}
+            title={isBookmarked ? "Saved" : "Save clipping"}
+            id={`bookmark-grid-${article.id}`}
+          >
+            <Heart size={12} className={isBookmarked ? "fill-current" : ""} />
+          </button>
+        </div>
       </div>
 
       <div className="p-4 flex-grow flex flex-col justify-between">
@@ -254,16 +428,60 @@ export default function ArticleCard({
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5 text-[#5e5347] font-mono text-[10px] font-bold">
-            <span className="flex items-center gap-0.5">
-              <Eye size={11} className="text-[#580a0a]" />
-              {article.views}
-            </span>
-            <span className="text-[#580a0a]/25">•</span>
-            <span className="flex items-center gap-0.5">
-              <MessageSquare size={11} className="text-[#580a0a]" />
-              {article.comments.length}
-            </span>
+          <div className="flex items-center gap-3">
+            {isAdmin && onDelete && (
+              confirmDelete ? (
+                <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete(article.id);
+                    }}
+                    className="bg-red-700 hover:bg-red-800 text-white font-mono text-[9px] font-bold px-2 py-0.5 rounded cursor-pointer uppercase shadow"
+                    id={`footer-confirm-delete-${article.id}`}
+                  >
+                    Confirm Delete
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setConfirmDelete(false);
+                    }}
+                    className="text-gray-500 text-[10px] px-1 hover:text-black cursor-pointer"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setConfirmDelete(true);
+                  }}
+                  className="flex items-center gap-1 text-red-700 hover:text-red-900 bg-red-100/80 hover:bg-red-200 border border-red-300/60 px-2 py-0.5 rounded font-mono text-[9px] font-bold uppercase transition-colors cursor-pointer"
+                  title="Delete this article permanently"
+                  id={`footer-delete-${article.id}`}
+                >
+                  <Trash2 size={10} />
+                  <span>Delete</span>
+                </button>
+              )
+            )}
+
+            <div className="flex items-center gap-1.5 text-[#5e5347] font-mono text-[10px] font-bold">
+              <span className="flex items-center gap-0.5">
+                <Eye size={11} className="text-[#580a0a]" />
+                {article.views}
+              </span>
+              <span className="text-[#580a0a]/25">•</span>
+              <span className="flex items-center gap-0.5">
+                <MessageSquare size={11} className="text-[#580a0a]" />
+                {article.comments.length}
+              </span>
+            </div>
           </div>
         </div>
       </div>

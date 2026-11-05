@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Article, Writer, Category } from '../types';
-import { Mail, MapPin, Feather, PlusCircle, CheckCircle, User, ArrowRight, NotebookPen, Tag, Upload, Camera, Edit3, Check, X, Globe } from 'lucide-react';
+import { Mail, MapPin, Feather, PlusCircle, CheckCircle, User, ArrowRight, NotebookPen, Tag, Upload, Camera, Edit3, Check, X, Globe, Trash2 } from 'lucide-react';
 
 interface WriterProfileViewProps {
   writers: Writer[];
@@ -9,6 +9,7 @@ interface WriterProfileViewProps {
   onReadArticle: (article: Article) => void;
   onAddNewWriter: (newWriter: Writer) => void;
   onUpdateWriter: (writerId: string, updatedFields: Partial<Writer>) => void;
+  onDeleteWriter?: (writerId: string) => void;
   isAdmin: boolean;
 }
 
@@ -19,9 +20,18 @@ export default function WriterProfileView({
   onReadArticle,
   onAddNewWriter,
   onUpdateWriter,
+  onDeleteWriter,
   isAdmin
 }: WriterProfileViewProps) {
-  const [selectedWriterId, setSelectedWriterId] = useState<string>(writers[0]?.id || '');
+  const [selectedWriterId, setSelectedWriterId] = useState<string>(writers[0]?.id || 'w-sameera');
+
+  // Keep selectedWriterId synced when writers change (e.g. after deletion)
+  useEffect(() => {
+    if (!writers.some(w => w.id === selectedWriterId)) {
+      setSelectedWriterId(writers[0]?.id || 'w-sameera');
+    }
+  }, [writers, selectedWriterId]);
+
   const [isComposing, setIsComposing] = useState(false);
   const [isAddingWriter, setIsAddingWriter] = useState(false);
 
@@ -58,11 +68,13 @@ export default function WriterProfileView({
   const [editLocation, setEditLocation] = useState('');
   const [editAvatar, setEditAvatar] = useState('');
   const [isDragOverEditAvatar, setIsDragOverEditAvatar] = useState(false);
+  const [confirmDeleteWriter, setConfirmDeleteWriter] = useState(false);
 
   const categoryOptions: Category[] = ['Politics', 'Tech', 'Science', 'Opinion', 'Culture', 'Business'];
 
-  const selectedWriter = writers.find(w => w.id === selectedWriterId);
-  const writerArticles = articles.filter(art => art.authorId === selectedWriterId);
+  const selectedWriter = writers.find(w => w.id === selectedWriterId) || writers[0];
+  const activeWriterId = selectedWriter?.id || 'w-sameera';
+  const writerArticles = articles.filter(art => art.authorId === activeWriterId);
 
   const handlePublishArticle = (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,13 +114,43 @@ export default function WriterProfileView({
   };
 
   const handleFileChange = (file: File, target: 'new' | 'edit') => {
+    // Compress and resize avatar image to max 256x256 WebP/JPEG to prevent localStorage QuotaExceededError
     const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64String = reader.result as string;
-      if (target === 'new') {
-        setWriterAvatar(base64String);
-      } else {
-        setEditAvatar(base64String);
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const maxDimension = 256;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxDimension) {
+            height = Math.round((height * maxDimension) / width);
+            width = maxDimension;
+          }
+        } else {
+          if (height > maxDimension) {
+            width = Math.round((width * maxDimension) / height);
+            height = maxDimension;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.82);
+          if (target === 'new') {
+            setWriterAvatar(compressedDataUrl);
+          } else {
+            setEditAvatar(compressedDataUrl);
+          }
+        }
+      };
+      if (typeof e.target?.result === 'string') {
+        img.src = e.target.result;
       }
     };
     reader.readAsDataURL(file);
@@ -668,8 +710,42 @@ export default function WriterProfileView({
                     Edit Profile
                   </button>
                 )}
-                <div className="font-mono text-[9px] font-black px-3 py-1.5 uppercase">
-                  Staff Profile
+                {isAdmin && !isEditingProfile && selectedWriter.id !== 'w-sameera' && onDeleteWriter && (
+                  confirmDeleteWriter ? (
+                    <div className="flex items-center gap-1 bg-red-100 p-0.5 px-2 border-r border-[#580a0a]/15">
+                      <span className="font-mono text-[9px] font-bold text-red-900 uppercase">Delete profile?</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onDeleteWriter(selectedWriter.id);
+                          setConfirmDeleteWriter(false);
+                        }}
+                        className="px-2 py-0.5 bg-red-700 hover:bg-red-800 text-white font-mono text-[9px] font-bold rounded cursor-pointer uppercase shadow"
+                      >
+                        Confirm
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmDeleteWriter(false)}
+                        className="text-[9px] text-gray-600 hover:text-black font-mono px-1 cursor-pointer"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setConfirmDeleteWriter(true)}
+                      className="flex items-center gap-1.5 font-mono text-[9px] font-black px-3 py-1.5 uppercase hover:bg-red-100 border-r border-[#580a0a]/15 text-red-700 transition-colors cursor-pointer"
+                      title="Delete contributor profile"
+                    >
+                      <Trash2 size={10} />
+                      Delete Profile
+                    </button>
+                  )
+                )}
+                <div className="font-mono text-[9px] font-black px-3 py-1.5 uppercase text-[#580a0a]">
+                  {selectedWriter.id === 'w-sameera' ? '★ Editor-in-Chief & Founder' : 'Staff Profile'}
                 </div>
               </div>
 
@@ -835,20 +911,61 @@ export default function WriterProfileView({
                     </div>
                   </div>
 
-                  <div className="flex justify-end gap-2 border-t border-[#580a0a]/10 pt-4">
-                    <button
-                      type="button"
-                      onClick={() => setIsEditingProfile(false)}
-                      className="px-4 py-2 border-2 border-[#580a0a]/30 text-[#141110] bg-[#ebdcb9]/30 hover:bg-[#ebdcb9]/60 font-mono text-xs uppercase rounded cursor-pointer"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      className="px-5 py-2 bg-[#580a0a] text-white hover:bg-[#731212] font-mono text-xs font-bold uppercase rounded cursor-pointer flex items-center gap-1 border-2 border-[#580a0a]"
-                    >
-                      <Check size={12} /> Save Manually
-                    </button>
+                  <div className="flex flex-col sm:flex-row justify-between items-center gap-3 border-t border-[#580a0a]/10 pt-4">
+                    {selectedWriter.id !== 'w-sameera' && onDeleteWriter ? (
+                      confirmDeleteWriter ? (
+                        <div className="flex items-center gap-1.5 bg-red-100 p-1 px-3 border border-red-300 rounded self-start sm:self-auto">
+                          <span className="font-mono text-xs font-bold text-red-900 uppercase">Confirm delete?</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              onDeleteWriter(selectedWriter.id);
+                              setIsEditingProfile(false);
+                              setConfirmDeleteWriter(false);
+                            }}
+                            className="px-2.5 py-1 bg-red-700 hover:bg-red-800 text-white font-mono text-xs font-bold uppercase rounded cursor-pointer shadow"
+                          >
+                            Delete
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setConfirmDeleteWriter(false)}
+                            className="text-xs text-gray-600 hover:text-black font-mono px-1 cursor-pointer"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setConfirmDeleteWriter(true)}
+                          className="px-3 py-2 border border-red-300 text-red-700 hover:bg-red-50 font-mono text-xs uppercase rounded cursor-pointer flex items-center gap-1.5 self-start sm:self-auto"
+                        >
+                          <Trash2 size={12} />
+                          Delete Contributor
+                        </button>
+                      )
+                    ) : (
+                      <span className="font-mono text-[9px] font-bold uppercase text-[#580a0a] tracking-wider">
+                        ★ Principal Masthead Record
+                      </span>
+                    )}
+
+                    <div className="flex gap-2 self-end sm:self-auto">
+                      <button
+                        type="button"
+                        onClick={() => setIsEditingProfile(false)}
+                        className="px-4 py-2 border-2 border-[#580a0a]/30 text-[#141110] bg-[#ebdcb9]/30 hover:bg-[#ebdcb9]/60 font-mono text-xs uppercase rounded cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-5 py-2 bg-[#580a0a] text-white hover:bg-[#731212] font-mono text-xs font-bold uppercase rounded cursor-pointer flex items-center gap-1 border-2 border-[#580a0a]"
+                      >
+                        <Check size={12} /> Save Manually
+                      </button>
+                    </div>
                   </div>
                 </form>
               ) : (

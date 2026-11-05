@@ -11,28 +11,6 @@ export const INITIAL_WRITERS: Writer[] = [
     twitter: '@sameera_mahb',
     location: 'Colombo, Sri Lanka',
     joinedDate: 'June 2026'
-  },
-  {
-    id: 'w-arjun',
-    name: 'Dr. Arjun Sivakumaran',
-    role: 'Senior Legal & Constitutional Analyst',
-    bio: 'Former senior appellate counsel and researcher focusing on constitutional jurisprudence, emergency regulations, and judicial oversight in South Asia.',
-    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=400&h=400',
-    email: 'arjun.s@ceylonreview.com',
-    twitter: '@arjun_siva_law',
-    location: 'Jaffna / Colombo',
-    joinedDate: 'January 2025'
-  },
-  {
-    id: 'w-dilini',
-    name: 'Dilini Senanayake',
-    role: 'Investigative Economics Correspondent',
-    bio: 'Covers public finance transparency, sovereign debt restructurings, state-owned enterprise accountability, and environmental governance.',
-    avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=400&h=400',
-    email: 'dilini.s@ceylonreview.com',
-    twitter: '@dilini_econ',
-    location: 'Kandy, Sri Lanka',
-    joinedDate: 'March 2025'
   }
 ];
 
@@ -167,7 +145,7 @@ export const INITIAL_ARTICLES: Article[] = [
       "IV. The Lessons for Public Oversight",
       "The ongoing restructuring agreements with the Official Creditor Committee and private bondholders highlight the necessity of statutory debt ceilings, mandatory public register of state guarantees, and judicial standing for public citizens to audit sovereign liabilities before signature."
     ],
-    authorId: 'w-dilini',
+    authorId: 'w-sameera',
     publishedAt: 'October 14, 2024',
     category: 'Business',
     imageUrl: 'https://images.unsplash.com/photo-1559526324-4b87b5e36e44?auto=format&fit=crop&q=80&w=1200&h=630',
@@ -199,7 +177,7 @@ export const INITIAL_ARTICLES: Article[] = [
       "III. The Continuing Need for Assembly Protection Statutes",
       "Judicial rulings during the 2022 protests demonstrated the institutional resilience of magistrate courts. However, reliance on judicial discretion case-by-case is an inadequate substitute for comprehensive legislative reform reconciling colonial police statutes with contemporary human rights standards."
     ],
-    authorId: 'w-arjun',
+    authorId: 'w-sameera',
     publishedAt: 'February 20, 2025',
     category: 'Politics',
     imageUrl: 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&q=80&w=1200&h=630',

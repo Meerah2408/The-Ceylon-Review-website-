@@ -85,8 +85,8 @@ export default function Header({
             {currentUser ? (
               <div className="flex items-center gap-1.5 bg-emerald-950/10 border border-emerald-800/30 px-2.5 py-1 rounded text-emerald-900 font-mono text-[9px] font-bold">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
-                <span className="hidden sm:inline">Cloud Live:</span>
-                <span className="truncate max-w-[130px]">{currentUser.email || 'Editor'}</span>
+                <span className="hidden sm:inline">Editor Access:</span>
+                <span className="truncate max-w-[140px]">{currentUser.email || 'zaina2408@gmail.com'}</span>
                 {onSignOutGoogle && (
                   <button 
                     onClick={onSignOutGoogle}
@@ -98,16 +98,11 @@ export default function Header({
                 )}
               </div>
             ) : (
-              onSignInGoogle && (
-                <button
-                  onClick={onSignInGoogle}
-                  className="flex items-center gap-1 px-2.5 py-1 border border-amber-800/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-950 font-mono text-[9px] font-bold uppercase rounded cursor-pointer transition-all"
-                  title="Sign in with Google to enable instant live cloud publishing"
-                >
-                  <Cloud size={10} className="text-amber-700" />
-                  <span>Editor Sign-In</span>
-                </button>
-              )
+              <div className="flex items-center gap-1.5 bg-emerald-950/10 border border-emerald-800/30 px-2.5 py-1 rounded text-emerald-900 font-mono text-[9px] font-bold">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
+                <span className="hidden sm:inline">Editor Access:</span>
+                <span>zaina2408@gmail.com</span>
+              </div>
             )}
 
             <span className="hidden sm:inline text-black/10">|</span>
@@ -118,14 +113,14 @@ export default function Header({
                 onClick={handleToggleAdmin}
                 className={`flex items-center gap-1.5 px-3 py-1 border rounded transition-all font-mono text-[10px] font-bold uppercase cursor-pointer ${
                   isAdmin 
-                    ? 'bg-[#580a0a] text-white border-[#580a0a]' 
+                    ? 'bg-[#580a0a] text-white border-[#580a0a] shadow-sm ring-1 ring-[#580a0a]/30' 
                     : 'bg-[#ebdcb9]/40 hover:bg-[#ebdcb9]/80 border-[#580a0a]/25 text-[#141110]'
                 }`}
-                title="Editor Administration Console"
+                title="Toggle Editor Mode"
                 id="admin-security-toggle"
               >
                 {isAdmin ? <Unlock size={10} /> : <Lock size={10} />}
-                {isAdmin ? 'Editor Mode Active' : 'Editor Access'}
+                {isAdmin ? 'Editor Mode Active (Delete Articles Enabled)' : 'Click to Enable Editor Mode'}
               </button>
             </div>
 
@@ -145,17 +140,24 @@ export default function Header({
         {/* Master Brand Title */}
         <div 
           onClick={() => setActiveTab('current')}
-          className="cursor-pointer select-none group flex flex-col items-center justify-center my-3 hover:opacity-95 transition-opacity" 
+          className="cursor-pointer select-none group flex flex-col items-center justify-center my-2 hover:opacity-95 transition-opacity" 
           id="main-newspaper-logo"
         >
-          <div className="flex items-center gap-4">
-            <div className="w-8 h-[2px] bg-[#580a0a]" />
-            <h1 className="font-serif text-5xl md:text-7.5xl font-black tracking-tight text-[#141110] uppercase leading-none">
-              the ceylon review
-            </h1>
-            <div className="w-8 h-[2px] bg-[#580a0a]" />
+          <div className="flex items-center gap-3 sm:gap-5">
+            <img 
+              src="/golden-globe-icon.jpg" 
+              alt="The Ceylon Review Golden Globe" 
+              className="w-10 h-10 sm:w-14 sm:h-14 rounded-full object-cover border-2 border-[#580a0a] shadow-md ring-2 ring-[#ebdcb9]/60 shrink-0" 
+            />
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="hidden sm:block w-6 md:w-8 h-[2px] bg-[#580a0a]" />
+              <h1 className="font-serif text-4xl sm:text-5xl md:text-7xl font-black tracking-tight text-[#141110] uppercase leading-none">
+                the ceylon review
+              </h1>
+              <div className="hidden sm:block w-6 md:w-8 h-[2px] bg-[#580a0a]" />
+            </div>
           </div>
-          <p className="font-mono text-[10px] md:text-[11px] tracking-[0.35em] text-[#580a0a] mt-3 uppercase font-extrabold">
+          <p className="font-mono text-[9px] sm:text-[10px] md:text-[11px] tracking-[0.25em] sm:tracking-[0.35em] text-[#580a0a] mt-2.5 uppercase font-extrabold text-center">
             Law, Society & Public Affairs • Independent Ceylon Perspectives
           </p>
         </div>

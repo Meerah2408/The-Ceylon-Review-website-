@@ -96,8 +96,17 @@ export async function signInEditorWithGoogle(): Promise<User | null> {
   try {
     const result = await signInWithPopup(auth, googleProvider);
     return result.user;
-  } catch (err: unknown) {
-    console.error('Google Sign-in failed:', err);
+  } catch (err: any) {
+    // If running in an iframe or if the preview domain is not in Firebase Auth's Authorized Domains,
+    // Google popup authentication throws auth/network-request-failed or auth/popup-blocked.
+    const errCode = err?.code || '';
+    const errMsg = err?.message || '';
+
+    if (errCode === 'auth/network-request-failed' || errCode === 'auth/popup-blocked' || errCode === 'auth/unauthorized-domain') {
+      console.warn('Google Sign-in popup blocked or origin unlisted by Firebase Auth domain security:', err);
+    } else {
+      console.error('Google Sign-in failed:', err);
+    }
     throw err;
   }
 }
@@ -195,7 +204,16 @@ export async function saveWriterToFirestore(writer: Writer): Promise<void> {
   }
 }
 
-// Seed initial archives if Firestore is empty
+export async function deleteWriterFromFirestore(writerId: string): Promise<void> {
+  const path = `writers/${writerId}`;
+  try {
+    await deleteDoc(doc(db, 'writers', writerId));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, path);
+  }
+}
+
+// Seed initial archives if Firestore is empty, and ensure non-Sameera profiles are purged
 export async function seedInitialFirestoreArchives(): Promise<void> {
   try {
     const existingSnap = await getDocs(query(collection(db, 'articles')));
@@ -204,13 +222,32 @@ export async function seedInitialFirestoreArchives(): Promise<void> {
         await setDoc(doc(db, 'articles', art.id), art);
       }
     }
+
     const writersSnap = await getDocs(query(collection(db, 'writers')));
     if (writersSnap.empty) {
       for (const w of INITIAL_WRITERS) {
         await setDoc(doc(db, 'writers', w.id), w);
+      }
+    } else {
+      // Clean up any non-Sameera writers from Firestore (e.g., w-arjun, w-dilini)
+      writersSnap.forEach(async (docSnap) => {
+        const data = docSnap.data() as Writer;
+        if (data.id !== 'w-sameera' && (data.id === 'w-arjun' || data.id === 'w-dilini' || data.name.toLowerCase().includes('arjun') || data.name.toLowerCase().includes('dilini'))) {
+          try {
+            await deleteDoc(doc(db, 'writers', docSnap.id));
+          } catch (e) {
+            console.warn('Could not delete old writer doc from Firestore:', e);
+          }
+        }
+      });
+      // Ensure Sameera is present
+      const sameeraWriter = INITIAL_WRITERS.find(w => w.id === 'w-sameera');
+      if (sameeraWriter) {
+        await setDoc(doc(db, 'writers', 'w-sameera'), sameeraWriter, { merge: true });
       }
     }
   } catch (error) {
     console.warn('Initial seeding could not complete (might require editorial auth):', error);
   }
 }
+

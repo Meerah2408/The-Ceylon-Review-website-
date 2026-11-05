@@ -182,11 +182,19 @@ export default function MediaHub({ isAdmin }: MediaHubProps) {
 
   // Sync to LocalStorage
   useEffect(() => {
-    localStorage.setItem('ceylon_review_videos_v2', JSON.stringify(videos));
+    try {
+      localStorage.setItem('ceylon_review_videos_v2', JSON.stringify(videos));
+    } catch (e) {
+      console.warn('Could not save videos to localStorage', e);
+    }
   }, [videos]);
 
   useEffect(() => {
-    localStorage.setItem('ceylon_review_events_v2', JSON.stringify(events));
+    try {
+      localStorage.setItem('ceylon_review_events_v2', JSON.stringify(events));
+    } catch (e) {
+      console.warn('Could not save events to localStorage', e);
+    }
   }, [events]);
 
   // Video embed generator
@@ -299,15 +307,11 @@ export default function MediaHub({ isAdmin }: MediaHubProps) {
 
   // Deletion Handlers
   const handleDeleteVideo = (id: string) => {
-    if (window.confirm('Are you sure you want to delete this video dispatch?')) {
-      setVideos(prev => prev.filter(v => v.id !== id));
-    }
+    setVideos(prev => prev.filter(v => v.id !== id));
   };
 
   const handleDeleteEvent = (id: string) => {
-    if (window.confirm('Are you sure you want to delete this event gallery item?')) {
-      setEvents(prev => prev.filter(e => e.id !== id));
-    }
+    setEvents(prev => prev.filter(e => e.id !== id));
   };
 
   return (

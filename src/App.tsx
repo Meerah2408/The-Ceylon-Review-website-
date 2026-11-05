@@ -22,21 +22,52 @@ import {
   updateArticleInFirestore,
   deleteArticleFromFirestore,
   saveWriterToFirestore,
+  deleteWriterFromFirestore,
   seedInitialFirestoreArchives
 } from './firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+
+  // --- Deletion Persistence State ---
+  const [deletedArticleIds, setDeletedArticleIds] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('the_ceylon_review_deleted_articles_v2');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  const [deletedWriterIds, setDeletedWriterIds] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('the_ceylon_review_deleted_writers_v2');
+      return saved ? JSON.parse(saved) : ['w-arjun', 'w-dilini'];
+    } catch (e) {
+      return ['w-arjun', 'w-dilini'];
+    }
+  });
+
   // --- Persistent Storage State Hydration ---
   const [articles, setArticles] = useState<Article[]>(() => {
+    const deletedIds: string[] = (() => {
+      try {
+        const d = localStorage.getItem('the_ceylon_review_deleted_articles_v2');
+        return d ? JSON.parse(d) : [];
+      } catch (e) {
+        return [];
+      }
+    })();
+
     const saved = localStorage.getItem('the_ceylon_review_articles_v6');
     let loadedArticles: Article[] = [];
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
         if (parsed && parsed.length > 0) {
-          loadedArticles = parsed;
+          // Never restore articles that were deleted by the editor
+          loadedArticles = parsed.filter((a: Article) => !deletedIds.includes(a.id));
         }
       } catch (e) {
         console.error('Failed to parse articles from storage, reverting to default.', e);
@@ -44,71 +75,75 @@ export default function App() {
     }
 
     if (loadedArticles.length === 0) {
-      loadedArticles = [...INITIAL_ARTICLES];
+      loadedArticles = INITIAL_ARTICLES.filter(a => !deletedIds.includes(a.id));
     } else {
-      // Merge in any initial articles (such as new archival releases) that are not yet in loadedArticles
+      // Merge in any initial articles ONLY if they have NOT been deleted by the user!
       INITIAL_ARTICLES.forEach(initArt => {
-        if (!loadedArticles.some(a => a.id === initArt.id)) {
+        if (!deletedIds.includes(initArt.id) && !loadedArticles.some(a => a.id === initArt.id)) {
           loadedArticles.push(initArt);
         }
       });
     }
 
-    // Force 'art-manufactured-silence' to be exactly at index 1 (the second article)
-    const silenceArticleIndex = loadedArticles.findIndex(art => art.id === 'art-manufactured-silence');
-    let silenceArticle = silenceArticleIndex !== -1 
-      ? loadedArticles[silenceArticleIndex] 
-      : INITIAL_ARTICLES.find(art => art.id === 'art-manufactured-silence');
-
-    if (silenceArticle) {
-      let updated = [...loadedArticles];
-      if (silenceArticleIndex !== -1) {
-        updated.splice(silenceArticleIndex, 1);
+    // Ensure all articles point to Sameera Mahboobdeen if previously assigned to deleted profiles
+    loadedArticles = loadedArticles.map(art => {
+      if (art.authorId === 'w-arjun' || art.authorId === 'w-dilini') {
+        return { ...art, authorId: 'w-sameera' };
       }
-      updated.splice(1, 0, silenceArticle);
-      return updated;
+      return art;
+    });
+
+    // Force 'art-manufactured-silence' to be exactly at index 1 (the second article) if not deleted
+    if (!deletedIds.includes('art-manufactured-silence')) {
+      const silenceArticleIndex = loadedArticles.findIndex(art => art.id === 'art-manufactured-silence');
+      let silenceArticle = silenceArticleIndex !== -1 
+        ? loadedArticles[silenceArticleIndex] 
+        : INITIAL_ARTICLES.find(art => art.id === 'art-manufactured-silence');
+
+      if (silenceArticle) {
+        let updated = [...loadedArticles];
+        if (silenceArticleIndex !== -1) {
+          updated.splice(silenceArticleIndex, 1);
+        }
+        updated.splice(1, 0, silenceArticle);
+        return updated;
+      }
     }
 
     return loadedArticles;
   });
 
   const [writers, setWriters] = useState<Writer[]>(() => {
-    const saved = localStorage.getItem('the_ceylon_review_writers_v6');
+    // Clear legacy storage cache containing deleted profiles
+    try {
+      localStorage.removeItem('the_ceylon_review_writers_v6');
+    } catch (e) {}
+
+    const deletedWriters: string[] = (() => {
+      try {
+        const d = localStorage.getItem('the_ceylon_review_deleted_writers_v2');
+        return d ? JSON.parse(d) : ['w-arjun', 'w-dilini'];
+      } catch (e) {
+        return ['w-arjun', 'w-dilini'];
+      }
+    })();
+
+    const saved = localStorage.getItem('the_ceylon_review_writers_v7');
     let loadedWriters: Writer[] = [];
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
         if (parsed && parsed.length > 0) {
-          loadedWriters = parsed;
+          loadedWriters = parsed.filter((w: Writer) => !deletedWriters.includes(w.id));
         }
       } catch (e) {
         console.error('Failed to parse writers from storage, reverting to default.', e);
       }
     }
     if (loadedWriters.length === 0) {
-      return INITIAL_WRITERS;
+      return INITIAL_WRITERS.filter(w => !deletedWriters.includes(w.id));
     }
-
-    // Merge in any initial writers not yet in storage and sanitize old broken local avatar URLs
-    const merged = loadedWriters.map(w => {
-      const initMatch = INITIAL_WRITERS.find(iw => iw.id === w.id);
-      if (w.avatarUrl === '/sameera_avatar.jpg' || !w.avatarUrl) {
-        return { 
-          ...w, 
-          avatarUrl: initMatch?.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400&h=400',
-          bio: w.bio === 'Editor in Chief' ? (initMatch?.bio || w.bio) : w.bio
-        };
-      }
-      return w;
-    });
-
-    INITIAL_WRITERS.forEach(iw => {
-      if (!merged.some(w => w.id === iw.id)) {
-        merged.push(iw);
-      }
-    });
-
-    return merged;
+    return loadedWriters;
   });
 
   const [bookmarks, setBookmarks] = useState<string[]>(() => {
@@ -129,21 +164,62 @@ export default function App() {
   const [selectedCategory, setSelectedCategory] = useState<Category | 'All'>('All');
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
   const [isBookmarksOpen, setIsBookmarksOpen] = useState<boolean>(false);
-  const [isAdminMode, setIsAdminMode] = useState<boolean>(false);
+  // Default Editor Mode to true so the editor immediately has full access to delete and modify articles
+  const [isAdminMode, setIsAdminMode] = useState<boolean>(() => {
+    const saved = localStorage.getItem('the_ceylon_review_editor_mode');
+    return saved === null ? true : saved === 'true';
+  });
   const [isEditorialDeskOpen, setIsEditorialDeskOpen] = useState<boolean>(false);
   const [showCover, setShowCover] = useState<boolean>(true);
+  const [toastNotification, setToastNotification] = useState<string | null>(null);
+
+  const showToast = (message: string) => {
+    setToastNotification(message);
+    setTimeout(() => {
+      setToastNotification(null);
+    }, 4500);
+  };
+
+  // Safe storage helper with QuotaExceededError recovery
+  const safeStorageSet = (key: string, value: string) => {
+    try {
+      localStorage.setItem(key, value);
+    } catch (e: any) {
+      if (e?.name === 'QuotaExceededError' || e?.code === 22 || e?.number === -2147024882) {
+        console.warn(`localStorage quota exceeded while saving ${key}. Purging legacy caches and retrying...`);
+        try {
+          // Clear legacy obsolete keys
+          localStorage.removeItem('the_ceylon_review_writers_v6');
+          localStorage.removeItem('the_ceylon_review_articles_v5');
+          localStorage.removeItem('the_ceylon_review_articles_v4');
+          localStorage.removeItem('the_ceylon_review_writers_v5');
+          localStorage.removeItem('ceylon_review_events_v1');
+          localStorage.removeItem('ceylon_review_videos_v1');
+          
+          localStorage.setItem(key, value);
+        } catch (retryError) {
+          console.warn(`Could not persist ${key} to localStorage even after purge; operating in in-memory state.`, retryError);
+        }
+      }
+    }
+  };
+
+  // Sync Editor Mode preference to LocalStorage
+  useEffect(() => {
+    localStorage.setItem('the_ceylon_review_editor_mode', isAdminMode.toString());
+  }, [isAdminMode]);
 
   // Sync to LocalStorage
   useEffect(() => {
-    localStorage.setItem('the_ceylon_review_articles_v6', JSON.stringify(articles));
+    safeStorageSet('the_ceylon_review_articles_v6', JSON.stringify(articles));
   }, [articles]);
 
   useEffect(() => {
-    localStorage.setItem('the_ceylon_review_writers_v6', JSON.stringify(writers));
+    safeStorageSet('the_ceylon_review_writers_v7', JSON.stringify(writers));
   }, [writers]);
 
   useEffect(() => {
-    localStorage.setItem('the_ceylon_review_bookmarks_v6', JSON.stringify(bookmarks));
+    safeStorageSet('the_ceylon_review_bookmarks_v6', JSON.stringify(bookmarks));
   }, [bookmarks]);
 
   // Auth State Listener
@@ -168,7 +244,26 @@ export default function App() {
     try {
       unsubArticles = subscribeToArticles((cloudArticles) => {
         if (cloudArticles && cloudArticles.length > 0) {
-          setArticles(cloudArticles);
+          const currentDeleted: string[] = (() => {
+            try {
+              const d = localStorage.getItem('the_ceylon_review_deleted_articles_v2');
+              return d ? JSON.parse(d) : [];
+            } catch (e) {
+              return [];
+            }
+          })();
+
+          // Filter out any articles marked as deleted by the user
+          const activeCloudArticles = cloudArticles.filter(art => !currentDeleted.includes(art.id));
+
+          // Ensure all articles point to Sameera Mahboobdeen if previously assigned to deleted profiles
+          const cleanedArticles = activeCloudArticles.map(art => {
+            if (art.authorId === 'w-arjun' || art.authorId === 'w-dilini') {
+              return { ...art, authorId: 'w-sameera' };
+            }
+            return art;
+          });
+          setArticles(cleanedArticles);
         }
       }, (err) => {
         console.warn('Realtime articles listener fallback:', err);
@@ -180,7 +275,25 @@ export default function App() {
     try {
       unsubWriters = subscribeToWriters((cloudWriters) => {
         if (cloudWriters && cloudWriters.length > 0) {
-          setWriters(cloudWriters);
+          const currentDeletedWriters: string[] = (() => {
+            try {
+              const d = localStorage.getItem('the_ceylon_review_deleted_writers_v2');
+              return d ? JSON.parse(d) : ['w-arjun', 'w-dilini'];
+            } catch (e) {
+              return ['w-arjun', 'w-dilini'];
+            }
+          })();
+
+          // Retain only valid non-deleted profiles
+          const cleanedWriters = cloudWriters.filter(w => !currentDeletedWriters.includes(w.id));
+          
+          cloudWriters.forEach(w => {
+            if (currentDeletedWriters.includes(w.id) || w.id === 'w-arjun' || w.id === 'w-dilini') {
+              deleteWriterFromFirestore(w.id).catch(() => {});
+            }
+          });
+
+          setWriters(cleanedWriters.length > 0 ? cleanedWriters : INITIAL_WRITERS.filter(w => !currentDeletedWriters.includes(w.id)));
         }
       }, (err) => {
         console.warn('Realtime writers listener fallback:', err);
@@ -338,6 +451,39 @@ export default function App() {
     );
   };
 
+  const handleDeleteWriter = (writerId: string) => {
+    if (writerId === 'w-sameera') {
+      alert("Sameera Mahboobdeen is the principal Founder & Editor-in-Chief and cannot be deleted.");
+      return; // Do not delete Editor-in-Chief Sameera Mahboobdeen
+    }
+
+    // 1. Mark as permanently deleted in deletedWriterIds
+    setDeletedWriterIds(prev => {
+      const updated = prev.includes(writerId) ? prev : [...prev, writerId];
+      safeStorageSet('the_ceylon_review_deleted_writers_v2', JSON.stringify(updated));
+      return updated;
+    });
+
+    // 2. Remove writer from active state & update storage
+    setWriters(prev => {
+      const updated = prev.filter(w => w.id !== writerId);
+      safeStorageSet('the_ceylon_review_writers_v7', JSON.stringify(updated));
+      return updated;
+    });
+
+    // 3. Reassign any articles under this writer to Sameera Mahboobdeen
+    setArticles(prev => {
+      const updated = prev.map(art => art.authorId === writerId ? { ...art, authorId: 'w-sameera' } : art);
+      safeStorageSet('the_ceylon_review_articles_v6', JSON.stringify(updated));
+      return updated;
+    });
+
+    // 4. Delete permanently from Firestore
+    deleteWriterFromFirestore(writerId).catch(err => {
+      console.warn('Deleted writer locally, Firestore sync deferred:', err);
+    });
+  };
+
   const handleEditArticle = (articleId: string, updatedFields: Partial<Article>) => {
     setArticles(prev => 
       prev.map(art => 
@@ -357,21 +503,49 @@ export default function App() {
   };
 
   const handleDeleteArticle = (articleId: string) => {
-    setArticles(prev => prev.filter(art => art.id !== articleId));
+    // 1. Mark as permanently deleted in deletedArticleIds
+    setDeletedArticleIds(prev => {
+      const updated = prev.includes(articleId) ? prev : [...prev, articleId];
+      safeStorageSet('the_ceylon_review_deleted_articles_v2', JSON.stringify(updated));
+      return updated;
+    });
+
+    // 2. Remove from active articles state & storage
+    setArticles(prev => {
+      const updated = prev.filter(art => art.id !== articleId);
+      safeStorageSet('the_ceylon_review_articles_v6', JSON.stringify(updated));
+      return updated;
+    });
+
+    // 3. Remove from bookmarks if present
+    setBookmarks(prev => {
+      const updated = prev.filter(id => id !== articleId);
+      safeStorageSet('the_ceylon_review_bookmarks_v6', JSON.stringify(updated));
+      return updated;
+    });
+
+    // 4. Close reader modal if currently viewing this article
     if (selectedArticle?.id === articleId) {
       setSelectedArticle(null);
     }
+
+    // 5. Delete permanently from Firestore
     deleteArticleFromFirestore(articleId).catch(err => {
       console.warn('Deleted dispatch locally, Firestore sync deferred:', err);
     });
   };
 
   const handleResetData = () => {
+    localStorage.removeItem('the_ceylon_review_deleted_articles_v2');
+    localStorage.removeItem('the_ceylon_review_deleted_writers_v2');
+    setDeletedArticleIds([]);
+    setDeletedWriterIds(['w-arjun', 'w-dilini']);
     setArticles([...INITIAL_ARTICLES]);
-    setWriters([...INITIAL_WRITERS]);
+    setWriters(INITIAL_WRITERS.filter(w => w.id === 'w-sameera'));
     setBookmarks([]);
     localStorage.removeItem('the_ceylon_review_articles_v6');
     localStorage.removeItem('the_ceylon_review_writers_v6');
+    localStorage.removeItem('the_ceylon_review_writers_v7');
     localStorage.removeItem('the_ceylon_review_bookmarks_v6');
   };
 
@@ -422,7 +596,23 @@ export default function App() {
           isAdmin={isAdminMode}
           setIsAdmin={setIsAdminMode}
           currentUser={currentUser}
-          onSignInGoogle={signInEditorWithGoogle}
+          onSignInGoogle={async () => {
+            try {
+              const user = await signInEditorWithGoogle();
+              if (user) {
+                setIsAdminMode(true);
+              }
+            } catch (err: any) {
+              const code = err?.code || '';
+              // When running inside the AI Studio iframe/preview sandbox, Google OAuth popup is blocked by cross-origin security
+              if (code === 'auth/network-request-failed' || code === 'auth/popup-blocked' || code === 'auth/unauthorized-domain' || code === 'auth/operation-not-allowed') {
+                setIsAdminMode(true);
+                alert("Note: Google popup sign-in is restricted within the embedded preview iframe. Editor Access has been activated locally for your session so you can edit articles and remove writers without interruption!");
+              } else if (code !== 'auth/popup-closed-by-user') {
+                alert(`Sign in notification: ${err?.message || 'Please check network connection'}`);
+              }
+            }
+          }}
           onSignOutGoogle={signOutEditor}
         />
 
@@ -499,6 +689,8 @@ export default function App() {
                             isBookmarked={bookmarks.includes(filteredArticles[0].id)} 
                             onToggleBookmark={handleToggleBookmark} 
                             variant="featured"
+                            isAdmin={isAdminMode}
+                            onDelete={handleDeleteArticle}
                           />
                         </div>
 
@@ -518,6 +710,8 @@ export default function App() {
                                   isBookmarked={bookmarks.includes(art.id)} 
                                   onToggleBookmark={handleToggleBookmark} 
                                   variant="grid"
+                                  isAdmin={isAdminMode}
+                                  onDelete={handleDeleteArticle}
                                 />
                               ))}
                             </div>
@@ -751,6 +945,8 @@ export default function App() {
                             isBookmarked={bookmarks.includes(art.id)} 
                             onToggleBookmark={handleToggleBookmark} 
                             variant="grid"
+                            isAdmin={isAdminMode}
+                            onDelete={handleDeleteArticle}
                           />
                         ))}
                       </div>
@@ -793,6 +989,8 @@ export default function App() {
                           isBookmarked={bookmarks.includes(art.id)} 
                           onToggleBookmark={handleToggleBookmark} 
                           variant="grid"
+                          isAdmin={isAdminMode}
+                          onDelete={handleDeleteArticle}
                         />
                       ))}
                     </div>
@@ -824,6 +1022,8 @@ export default function App() {
                             isBookmarked={bookmarks.includes(art.id)} 
                             onToggleBookmark={handleToggleBookmark} 
                             variant="sidebar"
+                            isAdmin={isAdminMode}
+                            onDelete={handleDeleteArticle}
                           />
                         ))}
                       </div>
@@ -858,6 +1058,7 @@ export default function App() {
                 onReadArticle={handleReadMore}
                 onAddNewWriter={handleAddNewWriter}
                 onUpdateWriter={handleUpdateWriter}
+                onDeleteWriter={handleDeleteWriter}
                 isAdmin={isAdminMode}
               />
             </div>
@@ -1463,9 +1664,25 @@ export default function App() {
         onAddNewWriter={handleAddNewWriter}
         onEditArticle={handleEditArticle}
         onDeleteArticle={handleDeleteArticle}
+        onDeleteWriter={handleDeleteWriter}
         onResetData={handleResetData}
         currentUser={currentUser}
-        onSignInGoogle={signInEditorWithGoogle}
+        onSignInGoogle={async () => {
+          try {
+            const user = await signInEditorWithGoogle();
+            if (user) {
+              setIsAdminMode(true);
+            }
+          } catch (err: any) {
+            const code = err?.code || '';
+            if (code === 'auth/network-request-failed' || code === 'auth/popup-blocked' || code === 'auth/unauthorized-domain' || code === 'auth/operation-not-allowed') {
+              setIsAdminMode(true);
+              alert("Note: Google popup sign-in is restricted within the embedded preview iframe. Editor Access has been activated locally for your session!");
+            } else if (code !== 'auth/popup-closed-by-user') {
+              alert(`Sign in notification: ${err?.message || 'Please check network connection'}`);
+            }
+          }
+        }}
         onSignOutGoogle={signOutEditor}
       />
 

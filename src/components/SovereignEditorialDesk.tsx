@@ -18,6 +18,7 @@ interface SovereignEditorialDeskProps {
   onAddNewWriter: (newWriter: Writer) => void;
   onEditArticle: (articleId: string, updatedFields: Partial<Article>) => void;
   onDeleteArticle: (articleId: string) => void;
+  onDeleteWriter?: (writerId: string) => void;
   onResetData: () => void;
   currentUser?: User | null;
   onSignInGoogle?: () => void;
@@ -35,6 +36,7 @@ export default function SovereignEditorialDesk({
   onAddNewWriter,
   onEditArticle,
   onDeleteArticle,
+  onDeleteWriter,
   onResetData,
   currentUser,
   onSignInGoogle,
@@ -42,6 +44,8 @@ export default function SovereignEditorialDesk({
 }: SovereignEditorialDeskProps) {
   const [activeSubTab, setActiveSubTab] = useState<'articles' | 'data' | 'writers'>('articles');
   const [showConfirmReset, setShowConfirmReset] = useState(false);
+  const [deletingArticleId, setDeletingArticleId] = useState<string | null>(null);
+  const [deletingWriterId, setDeletingWriterId] = useState<string | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
   const [importSuccess, setImportSuccess] = useState(false);
   
@@ -58,6 +62,19 @@ export default function SovereignEditorialDesk({
   const [newIsCurrent, setNewIsCurrent] = useState(true);
   const [newIsFeatured, setNewIsFeatured] = useState(false);
 
+  // Edit article state
+  const [editingArticleId, setEditingArticleId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editSubtitle, setEditSubtitle] = useState('');
+  const [editSummary, setEditSummary] = useState('');
+  const [editCategory, setEditCategory] = useState<Category>('Politics');
+  const [editAuthorId, setEditAuthorId] = useState('w-sameera');
+  const [editImageUrl, setEditImageUrl] = useState('');
+  const [editReadTime, setEditReadTime] = useState('6 min read');
+  const [editContent, setEditContent] = useState('');
+  const [editIsCurrent, setEditIsCurrent] = useState(true);
+  const [editIsFeatured, setEditIsFeatured] = useState(false);
+
   // New writer state
   const [showNewWriterForm, setShowNewWriterForm] = useState(false);
   const [newWriterName, setNewWriterName] = useState('');
@@ -69,6 +86,46 @@ export default function SovereignEditorialDesk({
   const [newWriterLocation, setNewWriterLocation] = useState('Colombo, Sri Lanka');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleStartEditArticle = (art: Article) => {
+    setEditingArticleId(art.id);
+    setEditTitle(art.title);
+    setEditSubtitle(art.subtitle || '');
+    setEditSummary(art.summary || '');
+    setEditCategory(art.category);
+    setEditAuthorId(art.authorId);
+    setEditImageUrl(art.imageUrl || '');
+    setEditReadTime(art.readTime || '6 min read');
+    setEditContent(art.content.join('\n\n'));
+    setEditIsCurrent(art.isCurrent);
+    setEditIsFeatured(art.isFeatured || false);
+    setShowNewArticleForm(false);
+  };
+
+  const handleSaveEditArticle = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingArticleId || !editTitle.trim() || !editContent.trim()) return;
+
+    const paragraphs = editContent
+      .split(/\n\n+/)
+      .map(p => p.trim())
+      .filter(Boolean);
+
+    onEditArticle(editingArticleId, {
+      title: editTitle.trim(),
+      subtitle: editSubtitle.trim() || editTitle.trim(),
+      summary: editSummary.trim() || editSubtitle.trim() || editTitle.trim(),
+      content: paragraphs.length > 0 ? paragraphs : [editContent.trim()],
+      category: editCategory,
+      authorId: editAuthorId,
+      imageUrl: editImageUrl.trim(),
+      readTime: editReadTime.trim() || '6 min read',
+      isCurrent: editIsCurrent,
+      isFeatured: editIsFeatured,
+    });
+
+    setEditingArticleId(null);
+  };
 
   const handleCreateArticle = (e: React.FormEvent) => {
     e.preventDefault();
@@ -502,6 +559,175 @@ export default function SovereignEditorialDesk({
               </form>
             )}
 
+            {/* EDIT DISPATCH FORM */}
+            {editingArticleId && (
+              <form onSubmit={handleSaveEditArticle} className="p-4 bg-amber-500/10 border-2 border-[#580a0a] rounded space-y-3 animate-in fade-in duration-200">
+                <div className="flex items-center justify-between border-b border-[#580a0a]/20 pb-2">
+                  <h4 className="font-serif font-black text-xs uppercase tracking-wider text-[#580a0a] flex items-center gap-1.5">
+                    <Edit3 size={13} />
+                    <span>Edit Dispatch Details</span>
+                  </h4>
+                  <button 
+                    type="button" 
+                    onClick={() => setEditingArticleId(null)}
+                    className="p-1 text-gray-500 hover:text-black cursor-pointer"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="md:col-span-2">
+                    <label className="block font-mono text-[9px] font-bold uppercase text-[#5e5347] mb-1">
+                      Dispatch Title *
+                    </label>
+                    <input 
+                      type="text" 
+                      required 
+                      value={editTitle} 
+                      onChange={e => setEditTitle(e.target.value)}
+                      className="w-full text-xs font-serif font-bold p-2 bg-[#f5eedc] border border-[#580a0a]/30 rounded focus:outline-none focus:ring-1 focus:ring-[#580a0a]"
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="block font-mono text-[9px] font-bold uppercase text-[#5e5347] mb-1">
+                      Subtitle / Deck Line
+                    </label>
+                    <input 
+                      type="text" 
+                      value={editSubtitle} 
+                      onChange={e => setEditSubtitle(e.target.value)}
+                      className="w-full text-xs font-serif p-2 bg-[#f5eedc] border border-[#580a0a]/30 rounded focus:outline-none focus:ring-1 focus:ring-[#580a0a]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-mono text-[9px] font-bold uppercase text-[#5e5347] mb-1">
+                      Beat Category *
+                    </label>
+                    <select 
+                      value={editCategory} 
+                      onChange={e => setEditCategory(e.target.value as Category)}
+                      className="w-full text-xs font-mono p-2 bg-[#f5eedc] border border-[#580a0a]/30 rounded focus:outline-none focus:ring-1 focus:ring-[#580a0a]"
+                    >
+                      <option value="Politics">Politics</option>
+                      <option value="Tech">Tech</option>
+                      <option value="Science">Science</option>
+                      <option value="Opinion">Opinion</option>
+                      <option value="Culture">Culture</option>
+                      <option value="Business">Business</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block font-mono text-[9px] font-bold uppercase text-[#5e5347] mb-1">
+                      Assigned Byline *
+                    </label>
+                    <select 
+                      value={editAuthorId} 
+                      onChange={e => setEditAuthorId(e.target.value)}
+                      className="w-full text-xs font-mono p-2 bg-[#f5eedc] border border-[#580a0a]/30 rounded focus:outline-none focus:ring-1 focus:ring-[#580a0a]"
+                    >
+                      {writers.map(w => (
+                        <option key={w.id} value={w.id}>
+                          {w.name} ({w.role})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block font-mono text-[9px] font-bold uppercase text-[#5e5347] mb-1">
+                      Estimated Read Duration
+                    </label>
+                    <input 
+                      type="text" 
+                      value={editReadTime} 
+                      onChange={e => setEditReadTime(e.target.value)}
+                      className="w-full text-xs font-mono p-2 bg-[#f5eedc] border border-[#580a0a]/30 rounded focus:outline-none focus:ring-1 focus:ring-[#580a0a]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-mono text-[9px] font-bold uppercase text-[#5e5347] mb-1">
+                      Header Feature Image URL
+                    </label>
+                    <input 
+                      type="url" 
+                      value={editImageUrl} 
+                      onChange={e => setEditImageUrl(e.target.value)}
+                      className="w-full text-xs font-mono p-2 bg-[#f5eedc] border border-[#580a0a]/30 rounded focus:outline-none focus:ring-1 focus:ring-[#580a0a]"
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="block font-mono text-[9px] font-bold uppercase text-[#5e5347] mb-1">
+                      Summary / Abstract Preview
+                    </label>
+                    <textarea 
+                      rows={2}
+                      value={editSummary} 
+                      onChange={e => setEditSummary(e.target.value)}
+                      className="w-full text-xs font-serif p-2 bg-[#f5eedc] border border-[#580a0a]/30 rounded focus:outline-none focus:ring-1 focus:ring-[#580a0a]"
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="block font-mono text-[9px] font-bold uppercase text-[#5e5347] mb-1">
+                      Full Article Body * (Separate paragraphs with double Enter)
+                    </label>
+                    <textarea 
+                      rows={8}
+                      required
+                      value={editContent} 
+                      onChange={e => setEditContent(e.target.value)}
+                      className="w-full text-xs font-serif p-2 bg-[#f5eedc] border border-[#580a0a]/30 rounded focus:outline-none focus:ring-1 focus:ring-[#580a0a]"
+                    />
+                  </div>
+
+                  <div className="md:col-span-2 flex items-center gap-6 pt-1">
+                    <label className="flex items-center gap-2 cursor-pointer font-mono text-[10px] font-bold text-[#141110]">
+                      <input 
+                        type="checkbox" 
+                        checked={editIsCurrent} 
+                        onChange={e => setEditIsCurrent(e.target.checked)}
+                        className="accent-[#580a0a]"
+                      />
+                      <span>Active in Current News (Uncheck to Archive)</span>
+                    </label>
+
+                    <label className="flex items-center gap-2 cursor-pointer font-mono text-[10px] font-bold text-[#141110]">
+                      <input 
+                        type="checkbox" 
+                        checked={editIsFeatured} 
+                        onChange={e => setEditIsFeatured(e.target.checked)}
+                        className="accent-[#580a0a]"
+                      />
+                      <span>Pin as Featured Banner</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2 border-t border-[#580a0a]/15">
+                  <button 
+                    type="button" 
+                    onClick={() => setEditingArticleId(null)}
+                    className="px-3 py-1.5 font-mono text-[10px] font-bold uppercase rounded bg-gray-200 text-gray-800 hover:bg-gray-300 cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="submit" 
+                    className="px-4 py-1.5 font-mono text-[10px] font-bold uppercase rounded bg-[#580a0a] text-white hover:bg-[#731212] cursor-pointer flex items-center gap-1.5 shadow"
+                  >
+                    <Check size={12} />
+                    <span>Save Changes & Sync</span>
+                  </button>
+                </div>
+              </form>
+            )}
+
             <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-1">
               {articles.map((art, idx) => (
                 <div 
@@ -537,6 +763,14 @@ export default function SovereignEditorialDesk({
 
                   {/* Ordering & Actions */}
                   <div className="flex items-center gap-1.5 shrink-0">
+                    {/* Quick Edit */}
+                    <button 
+                      onClick={() => handleStartEditArticle(art)}
+                      className="p-1 border border-[#580a0a]/20 rounded bg-[#ebdcb9]/40 hover:bg-[#ebdcb9]/80 cursor-pointer text-[#580a0a]"
+                      title="Edit Dispatch Details"
+                    >
+                      <Edit3 size={12} />
+                    </button>
                     {/* Shift Up */}
                     <button 
                       onClick={() => handleMoveArticle(idx, 'up')}
@@ -556,17 +790,37 @@ export default function SovereignEditorialDesk({
                       <ArrowDown size={12} />
                     </button>
                     {/* Delete */}
-                    <button 
-                      onClick={() => {
-                        if (window.confirm(`Are you absolutely sure you want to delete the dispatch: "${art.title}"? This cannot be undone.`)) {
-                          onDeleteArticle(art.id);
-                        }
-                      }}
-                      className="p-1 border border-red-800/20 text-red-700 rounded bg-red-100/40 hover:bg-red-100 cursor-pointer"
-                      title="Delete Dispatch"
-                    >
-                      <Trash2 size={12} />
-                    </button>
+                    {deletingArticleId === art.id ? (
+                      <div className="flex items-center gap-1 bg-red-100 p-0.5 px-1.5 border border-red-300 rounded">
+                        <span className="text-[9px] font-mono font-bold text-red-900">Delete?</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            onDeleteArticle(art.id);
+                            setDeletingArticleId(null);
+                          }}
+                          className="px-1.5 py-0.5 bg-red-700 hover:bg-red-800 text-white font-mono text-[9px] font-bold rounded cursor-pointer uppercase shadow"
+                        >
+                          Yes
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDeletingArticleId(null)}
+                          className="text-[9px] text-gray-600 hover:text-black cursor-pointer px-0.5"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ) : (
+                      <button 
+                        type="button"
+                        onClick={() => setDeletingArticleId(art.id)}
+                        className="p-1 border border-red-800/20 text-red-700 rounded bg-red-100/40 hover:bg-red-100 cursor-pointer"
+                        title="Delete Dispatch"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}
@@ -718,6 +972,40 @@ export default function SovereignEditorialDesk({
                         </p>
                       </div>
                     </div>
+
+                    {writer.id !== 'w-sameera' && onDeleteWriter && (
+                      deletingWriterId === writer.id ? (
+                        <div className="flex items-center gap-1 bg-red-100 p-1 px-2 border border-red-300 rounded">
+                          <span className="text-[9px] font-mono font-bold text-red-900">Delete?</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              onDeleteWriter(writer.id);
+                              setDeletingWriterId(null);
+                            }}
+                            className="px-2 py-0.5 bg-red-700 hover:bg-red-800 text-white font-mono text-[9px] font-bold rounded cursor-pointer uppercase shadow"
+                          >
+                            Confirm
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDeletingWriterId(null)}
+                            className="text-[9px] text-gray-600 hover:text-black cursor-pointer px-1"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setDeletingWriterId(writer.id)}
+                          className="p-1.5 text-red-700 hover:bg-red-100/80 rounded transition-colors cursor-pointer"
+                          title={`Delete profile for ${writer.name}`}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )
+                    )}
                   </div>
                 );
               })}

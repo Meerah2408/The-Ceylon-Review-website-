@@ -36,10 +36,15 @@ export default function CoverPage({ onUnfold }: CoverPageProps) {
 
           {/* Large Serif Title "The Ceylon Review" Centered (Matches Image Casing & Font) */}
           <div className="text-center font-serif text-[#141110] flex flex-col justify-center items-center select-all select-none">
-            <h1 className="text-5xl sm:text-7xl md:text-8.5xl font-black tracking-tight leading-[0.8] font-serif text-[#141110] text-center" style={{ fontFamily: 'Georgia, serif' }}>
+            <img 
+              src="/golden-globe-icon.jpg" 
+              alt="The Ceylon Review Golden Globe" 
+              className="w-12 h-12 sm:w-16 sm:h-16 rounded-full object-cover border-2 border-[#580a0a] shadow-lg mb-2 ring-2 ring-[#ebdcb9]/80"
+            />
+            <h1 className="text-4xl sm:text-6xl md:text-7.5xl font-black tracking-tight leading-[0.85] font-serif text-[#141110] text-center" style={{ fontFamily: 'Georgia, serif' }}>
               The Ceylon
             </h1>
-            <h1 className="text-5xl sm:text-7xl md:text-8.5xl font-black tracking-tight leading-[0.8] font-serif text-[#141110] text-center mt-3 sm:mt-5" style={{ fontFamily: 'Georgia, serif' }}>
+            <h1 className="text-4xl sm:text-6xl md:text-7.5xl font-black tracking-tight leading-[0.85] font-serif text-[#141110] text-center mt-2 sm:mt-3" style={{ fontFamily: 'Georgia, serif' }}>
               Review
             </h1>
           </div>

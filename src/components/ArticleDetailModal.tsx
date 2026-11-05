@@ -67,6 +67,7 @@ export default function ArticleDetailModal({
   const [commentText, setCommentText] = useState('');
   const [hasLiked, setHasLiked] = useState(false);
   const [sharedToast, setSharedToast] = useState(false);
+  const [confirmDeleteArticle, setConfirmDeleteArticle] = useState(false);
 
   // Editing States
   const [isEditing, setIsEditing] = useState(false);
@@ -195,6 +196,43 @@ export default function ArticleDetailModal({
                 <Edit3 size={11} />
                 {isEditing ? 'Exit Editor Desk' : 'Modify Article Text'}
               </button>
+            )}
+
+            {isAdmin && onDeleteArticle && (
+              confirmDeleteArticle ? (
+                <div className="flex items-center gap-1.5 bg-red-100 p-1 px-2 border border-red-400 rounded shadow-sm">
+                  <span className="font-mono text-[10px] font-bold uppercase text-red-900">Permanently delete?</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onDeleteArticle(article.id);
+                      onClose();
+                    }}
+                    className="px-2.5 py-1 bg-red-800 hover:bg-red-900 text-white font-mono text-[10px] font-bold uppercase rounded cursor-pointer animate-pulse shadow"
+                    id="confirm-delete-article-topbar-btn"
+                  >
+                    Yes, Delete
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmDeleteArticle(false)}
+                    className="px-1 text-gray-700 hover:text-black font-mono text-[10px] cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setConfirmDeleteArticle(true)}
+                  className="p-1.5 px-3 border border-red-700/40 bg-red-100 hover:bg-red-200 text-red-800 cursor-pointer transition-all flex items-center gap-1.5 font-mono text-[11px] font-bold uppercase rounded shadow-sm"
+                  id="delete-article-topbar-btn"
+                  title="Delete this article permanently"
+                >
+                  <Trash2 size={12} />
+                  <span>Delete Article</span>
+                </button>
+              )
             )}
 
             {!isEditing && (
@@ -399,19 +437,37 @@ export default function ArticleDetailModal({
               </button>
 
               {onDeleteArticle && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (window.confirm(`Are you absolutely sure you want to permanently delete this dispatch ("${article.title}")? This cannot be undone.`)) {
-                      onDeleteArticle(article.id);
-                      onClose();
-                    }
-                  }}
-                  className="flex items-center gap-1.5 px-4 py-2 border border-red-800/30 bg-red-100 hover:bg-red-200 text-red-800 font-mono text-xs uppercase cursor-pointer rounded"
-                >
-                  <Trash2 size={13} />
-                  Delete Dispatch
-                </button>
+                confirmDeleteArticle ? (
+                  <div className="flex items-center gap-2 bg-red-100 p-1.5 px-3 border border-red-400 rounded">
+                    <span className="font-mono text-xs uppercase font-bold text-red-900">Confirm delete?</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onDeleteArticle(article.id);
+                        onClose();
+                      }}
+                      className="px-3 py-1 bg-red-800 hover:bg-red-900 text-white font-mono text-xs font-bold uppercase rounded cursor-pointer"
+                    >
+                      Delete
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmDeleteArticle(false)}
+                      className="text-xs text-gray-700 hover:text-black font-mono px-1 cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setConfirmDeleteArticle(true)}
+                    className="flex items-center gap-1.5 px-4 py-2 border border-red-800/30 bg-red-100 hover:bg-red-200 text-red-800 font-mono text-xs uppercase cursor-pointer rounded"
+                  >
+                    <Trash2 size={13} />
+                    Delete Dispatch
+                  </button>
+                )
               )}
 
               <button
